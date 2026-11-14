@@ -8304,7 +8304,13 @@ ${invoiceFootHtml('')}`;
     const num = v => { const n = parseFloat(v); return isNaN(n) ? null : n; };
     const norm = s => String(s || '').toLowerCase().replace(/[\u064B-\u0652\u0640]/g, '').replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه');
     const splitList = t => String(t || '').split(/[,،;|\n]+/).map(x => x.trim()).filter(Boolean);
-    const slugify = t => String(t || '').replace(/[\u202A-\u202E\u2066-\u2069\u200E\u200F]/g, '').trim().toLowerCase().replace(/[\s/?#%&]+/g, '-').replace(/-{2,}/g, '-').replace(/^-+|-+$/g, '');
+    const AR2EN = {"ث": "th", "خ": "kh", "ذ": "dh", "ش": "sh", "غ": "gh", "چ": "ch", "ژ": "zh", "ا": "a", "أ": "a", "إ": "a", "آ": "a", "ؤ": "u", "ئ": "y", "ب": "b", "ت": "t", "ج": "j", "ح": "h", "د": "d", "ر": "r", "ز": "z", "س": "s", "ص": "s", "ض": "d", "ط": "t", "ظ": "z", "ع": "a", "ف": "f", "ق": "q", "ك": "k", "ل": "l", "م": "m", "ن": "n", "ه": "h", "ة": "a", "و": "w", "ى": "a", "ي": "y", "ک": "k", "گ": "g", "پ": "p", "ی": "y", "٠": "0", "١": "1", "٢": "2", "٣": "3", "٤": "4", "٥": "5", "٦": "6", "٧": "7", "٨": "8", "٩": "9", "۰": "0", "۱": "1", "۲": "2", "۳": "3", "۴": "4", "۵": "5", "۶": "6", "۷": "7", "۸": "8", "۹": "9"};
+    const enSlug = t => {                                      // URL slug in English letters: Arabic is transliterated, Latin text stays as before
+      let s = String(t == null ? '' : t).replace(/[\u202A-\u202E\u2066-\u2069\u200E\u200F\u0640\u064B-\u065F\u0670\u0621]/g, '');
+      if (!/[\u0600-\u06FF]/.test(s)) return s.trim().toLowerCase().replace(/[\s/?#%&]+/g, '-').replace(/-{2,}/g, '-').replace(/^-+|-+$/g, '');
+      return s.toLowerCase().replace(/[\u0600-\u06FF]/g, ch => (AR2EN[ch] !== undefined ? AR2EN[ch] : ' ')).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    };
+    const slugify = t => enSlug(t);          // every web address uses English letters (Arabic is transliterated)
     const imgs = txt => String(txt || '').split(/\s+/).filter(u => /^https?:\/\//i.test(u));
     const st = { mk: null, seoOpen: '', utm: { page: '/ar/', custom: '', source: 'facebook', medium: 'paid_social', campaign: '', content: '', term: '' }, ov: null, carts: [], cartFilter: 'new', imp: null, tab: 'overview', gl: { gov: '', q: '', miss: false, draft: {}, msg: null }, products: [], cols: [], discounts: [], events: [], q: '', filter: 'all', cq: '', ed: null, dd: null, cd: null, app: null, feed: null, site: 0, pubState: 'ok', pubText: 'Website is up to date' };
 
@@ -8592,7 +8598,7 @@ ${invoiceFootHtml('')}`;
       else if (r.type === 'latest') { o.fixed = true; o.layout = 'grid'; o.rows = n(r.rows, 1, 6) || 3; o.cols_desktop = n(r.cols_desktop, 2, 6); o.cols_mobile = n(r.cols_mobile, 1, 3); o.more = rowBool(r.more, true); o.size = ['small', 'large'].includes(r.size) ? r.size : ''; o.full = rowBool(r.full, false); }
       else if (r.type === 'collection') { prod(); o.col = r.col || ''; o.count = n(r.count, 1, 48) || 8; o.more = rowBool(r.more, true); }
       else if (r.type === 'products') { prod(); o.skus = Array.isArray(r.skus) ? r.skus : []; }
-      else if (r.type === 'banner') { o.image = r.image || ''; o.mobile = r.mobile || ''; o.href = String(r.href || '').trim(); o.height = r.height || 'auto'; o.full = rowBool(r.full, false); o.cta_ar = String(r.cta_ar || '').trim(); o.cta_en = String(r.cta_en || '').trim();
+      else if (r.type === 'banner') { o.image = r.image || ''; o.mobile = r.mobile || ''; o.href = String(r.href || '').trim(); o.height = ['short', 'medium', 'tall', 'screen', 'r21x9', 'r16x9', 'r3x1', 'r4x3', 'r1x1', 'custom'].includes(r.height) ? r.height : 'auto'; o.hpx = Math.min(1400, Math.max(80, Math.round(Number(r.hpx) || 0))) || ''; o.hpx_m = Math.min(1000, Math.max(80, Math.round(Number(r.hpx_m) || 0))) || ''; o.focus = ['top', 'bottom', 'left', 'right'].includes(r.focus) ? r.focus : ''; o.full = rowBool(r.full, false); o.cta_ar = String(r.cta_ar || '').trim(); o.cta_en = String(r.cta_en || '').trim();
         o.sub_ar = String(r.sub_ar || '').trim(); o.sub_en = String(r.sub_en || '').trim(); o.ha = ['center', 'end'].includes(r.ha) ? r.ha : ''; o.va = ['top', 'bottom'].includes(r.va) ? r.va : ''; o.tone = r.tone === 'dark' ? 'dark' : ''; o.shade = ['strong', 'none'].includes(r.shade) ? r.shade : ''; o.tsize = r.tsize === 'large' ? 'large' : ''; o.fx = ['none', 'fade', 'rise', 'slide', 'zoom'].includes(r.fx) ? r.fx : '';
         o.buttons = (Array.isArray(r.buttons) ? r.buttons : []).slice(0, 3).map(b => ({ ar: String(b.ar || '').trim(), en: String(b.en || '').trim(), href: String(b.href || '').trim(), style: ['light', 'outline'].includes(b.style) ? b.style : 'solid' })).filter(b => b.ar || b.en); }
       else if (r.type === 'text') { o.html_ar = r.html_ar || ''; o.html_en = r.html_en || ''; o.size = ['small', 'large'].includes(r.size) ? r.size : ''; o.full = rowBool(r.full, false); }
@@ -8621,7 +8627,9 @@ ${invoiceFootHtml('')}`;
       }
       else if (r.type === 'banner') body = '<div style="grid-column:1/-1" class="sa-bar">' + (r.image ? '<img class="sa-th" src="' + E(r.image) + '" alt="">' : '<span class="sa-th"></span>') + '<button class="sa-btn" data-rimg="' + n + '|image">Upload desktop image</button>' + (r.mobile ? '<img class="sa-th" src="' + E(r.mobile) + '" alt="">' : '') + '<button class="sa-btn" data-rimg="' + n + '|mobile">Upload mobile image (optional)</button></div>' +
         '<div style="grid-column:1/-1">' + inp('href', 'Link when tapped ({lang} becomes ar or en, e.g. /{lang}/collections/tools/)') + '</div>' +
-        '<div><label>Width</label>' + sel('full', [['false', 'Inside the page margins'], ['true', 'Edge to edge']]) + '</div><div><label>Height</label>' + sel('height', [['auto', 'Natural (whole image)'], ['short', 'Short strip'], ['tall', 'Tall']]) + '</div><div></div>' +
+        '<div><label>Width</label>' + sel('full', [['false', 'Inside the page margins'], ['true', 'Edge to edge']]) + '</div><div><label>Height of the banner</label>' + sel('height', [['auto', 'Natural \u2014 the whole picture'], ['short', 'Short strip'], ['medium', 'Medium'], ['tall', 'Tall'], ['screen', 'Almost the full screen height'], ['r21x9', 'Wide strip 21:9'], ['r16x9', 'Widescreen 16:9'], ['r3x1', 'Very wide 3:1'], ['r4x3', 'Photo 4:3'], ['r1x1', 'Square 1:1'], ['custom', 'Exact height in pixels\u2026']]) + '</div>' +
+        '<div><label>Exact height \u2014 computer (px)</label><input data-r="' + n + '.hpx" type="number" min="80" max="1400" step="10" placeholder="e.g. 420" value="' + E(r.hpx) + '"></div><div><label>Exact height \u2014 mobile (px)</label><input data-r="' + n + '.hpx_m" type="number" min="80" max="1000" step="10" placeholder="e.g. 300" value="' + E(r.hpx_m) + '"></div>' +
+        '<div><label>When the picture is cut, keep</label>' + sel('focus', [['', 'The middle'], ['top', 'The top'], ['bottom', 'The bottom'], ['left', 'The left side'], ['right', 'The right side']]) + '</div><div class="sa-note" style="grid-column:span 2;margin:0">Natural shows the whole picture. Any other height fills the width and cuts the picture to fit, so choose which part to keep. The exact heights work only with \u201cExact height in pixels\u201d.</div>' +
         inp('cta_ar', 'Simple button text (Arabic) \u2014 the whole picture is the link', 'dir="rtl"') + inp('cta_en', 'Simple button text (English)') +
         '<div style="grid-column:1/-1"><div class="sa-sec" style="margin:10px 0 2px">Text and buttons on the picture</div><div class="sa-note">The title is the field “Title” above. Add a short text under it and up to 3 real buttons, each with its own link. Buttons are shown only in the language they are written in.</div></div>' +
         '<div><label>Text under the title (Arabic)</label><textarea rows="2" dir="rtl" data-r="' + n + '.sub_ar">' + E(r.sub_ar) + '</textarea></div><div><label>Text under the title (English)</label><textarea rows="2" data-r="' + n + '.sub_en">' + E(r.sub_en) + '</textarea></div><div></div>' +
@@ -8995,8 +9003,9 @@ ${invoiceFootHtml('')}`;
         image: t('image'), published: !!f.published, show_in_menu: !!f.show_in_menu, show_on_home: !!f.show_on_home, parent_ids: (f.parent_ids || []).slice(), parent_id: (f.parent_ids || [])[0] || null, sort_order: num(f.sort_order) || 0 };
       let match = f.match_name;
       if (cd.isNew) {
-        match = name; const slug = slugify(match); if (!slug) return say('Invalid name');
-        if (st.cols.some(c => c.match_name === match || c.slug === slug)) return say('A collection with this name already exists');
+        match = name; const baseSlug = slugify(row.title_en || match); if (!baseSlug) return say('Invalid name');          // the English title makes the nicest address
+        if (st.cols.some(c => c.match_name === match)) return say('A collection with this name already exists');
+        let slug = baseSlug, n = 1; while (st.cols.some(c => c.slug === slug)) slug = baseSlug + '-' + (++n);
         Object.assign(row, { match_name: match, slug });
       }
       const r = cd.isNew ? await SB().from('store_collections').insert(row) : await SB().from('store_collections').update(row).eq('id', f.id);
@@ -9268,7 +9277,7 @@ ${invoiceFootHtml('')}`;
         ['title', 'title_en', 'seo_title', 'seo_title_en', 'seo_description', 'seo_description_en', 'description', 'description_en', 'image'].forEach(txt);
         ['published', 'show_in_menu', 'show_on_home'].forEach(k => { if (has(k)) row[k] = yes(cell(r, CCOL[k])); });
         if (has('sort_order')) { const n = parseFloat(cell(r, CCOL.sort_order)); row.sort_order = isNaN(n) ? 0 : n; }
-        if (!ex) { row.match_name = key; row.slug = (has('slug') && cell(r, CCOL.slug)) || slugify(key); if (!row.title) row.title = key; if (!row.slug) { errors.push('Row ' + line + ': cannot make a web address from "' + key + '"'); return; } if (st.cols.some(c => c.slug === row.slug)) { errors.push('Row ' + line + ': web address "' + row.slug + '" is already used'); return; } }
+        if (!ex) { row.match_name = key; row.slug = slugify((has('slug') && cell(r, CCOL.slug)) || row.title_en || key); if (!row.title) row.title = key; if (!row.slug) { errors.push('Row ' + line + ': cannot make a web address from "' + key + '"'); return; } if (st.cols.some(c => c.slug === row.slug)) { errors.push('Row ' + line + ': web address "' + row.slug + '" is already used'); return; } }
         const parents = has('parents') ? cell(r, CCOL.parents).split(/\s*[|,]\s*/).filter(Boolean) : null;
         let changed = !ex; if (ex) Object.keys(row).forEach(k => { const a = row[k], b = ex[k]; if (String(a == null ? '' : a) !== String(b == null ? '' : b)) changed = true; });
         if (ex && parents) { const cur = pidsOf(ex).map(id => (st.cols.find(c => c.id === id) || {}).match_name).filter(Boolean).sort().join('|'); if (cur !== parents.slice().sort().join('|')) changed = true; }
