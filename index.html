@@ -1159,8 +1159,22 @@
       <button class="modal-opt-btn" data-mail="urgent">urgent <span class="mail-sent-count" id="sentCount_urgent"></span></button>
       <button class="modal-opt-btn" data-mail="any update">any update <span class="mail-sent-count" id="sentCount_anyupdate"></span></button>
       <button class="modal-opt-btn" id="rescheduleOptBtn">reschedule <span class="mail-sent-count" id="sentCount_reschedule"></span></button>
+      <button class="modal-opt-btn" id="customMailOptBtn">Custom <span class="mail-sent-count" id="sentCount_custom"></span></button>
     </div>
     <button class="modal-cancel" id="closeMailModalBtn">Cancel</button>
+  </div>
+</div>
+
+<!-- ============ CUSTOM MAIL MODAL ============ -->
+<div class="modal-overlay" id="customMailModal">
+  <div class="modal-card">
+    <div class="modal-title" id="customMailModalTitle">Custom mail</div>
+    <div class="modal-sub">Write the message that will be emailed to the customer:</div>
+    <textarea id="customMailBody" class="reschedule-date-input" rows="8" placeholder="Write the body of the email here\u2026" style="min-height:170px;resize:vertical;line-height:1.6"></textarea>
+    <div class="modal-options" style="margin-top:14px;">
+      <button class="modal-opt-btn" id="confirmCustomMailBtn">Send</button>
+    </div>
+    <button class="modal-cancel" id="closeCustomMailBtn">Cancel</button>
   </div>
 </div>
 
@@ -2721,6 +2735,33 @@ try{
         "mail status": selectedMailStatus
       }, `Mail Sent (${selectedMailStatus})`);
     });
+  });
+
+  // ---- Custom mail: write the body, send it to the same webhook with event "custom mail" (+ order serial and body) ----
+  function hideCustomMailModal(){ $('customMailModal').classList.remove('active'); }
+  $('customMailOptBtn').addEventListener('click', () => {
+    const btn = currentTargetBtn, serial = currentMailSerial, orderId = currentOrderId;
+    hideMailModal();
+    if(!btn || !serial) return;
+    currentTargetBtn = btn; currentMailSerial = serial; currentOrderId = orderId;       // keep them for the Send button
+    $('customMailModalTitle').textContent = 'Custom mail: ' + (orderId || 'Order');
+    $('customMailBody').value = '';
+    $('customMailModal').classList.add('active');
+    setTimeout(() => $('customMailBody').focus(), 60);
+  });
+  $('closeCustomMailBtn').addEventListener('click', hideCustomMailModal);
+  $('customMailModal').addEventListener('click', (e)=>{ if(e.target === $('customMailModal')) hideCustomMailModal(); });
+  $('confirmCustomMailBtn').addEventListener('click', async () => {
+    const btn = currentTargetBtn, serial = currentMailSerial, body = $('customMailBody').value.trim();
+    if(!body){ $('customMailBody').focus(); return; }
+    hideCustomMailModal();
+    if(!btn || !serial) return;
+    logOrderAction(serial, 'Custom mail sent', body.slice(0, 200));
+    await sendMakeWebhook(btn, {
+      "order serial": serial,
+      "body": body,
+      "event": "custom mail"
+    }, 'Custom mail sent');
   });
 
   // ---- Reschedule flow: pick a date, send a webhook with order serial + date ----
@@ -8599,7 +8640,7 @@ ${invoiceFootHtml('')}`;
       else if (r.type === 'collection') { prod(); o.col = r.col || ''; o.count = n(r.count, 1, 48) || 8; o.more = rowBool(r.more, true); }
       else if (r.type === 'products') { prod(); o.skus = Array.isArray(r.skus) ? r.skus : []; }
       else if (r.type === 'banner') { o.image = r.image || ''; o.mobile = r.mobile || ''; o.href = String(r.href || '').trim(); o.height = ['short', 'medium', 'tall', 'screen', 'r21x9', 'r16x9', 'r3x1', 'r4x3', 'r1x1', 'custom'].includes(r.height) ? r.height : 'auto'; o.hpx = Math.min(1400, Math.max(80, Math.round(Number(r.hpx) || 0))) || ''; o.hpx_m = Math.min(1000, Math.max(80, Math.round(Number(r.hpx_m) || 0))) || ''; o.focus = ['top', 'bottom', 'left', 'right'].includes(r.focus) ? r.focus : ''; o.full = rowBool(r.full, false); o.cta_ar = String(r.cta_ar || '').trim(); o.cta_en = String(r.cta_en || '').trim();
-        o.sub_ar = String(r.sub_ar || '').trim(); o.sub_en = String(r.sub_en || '').trim(); o.ha = ['center', 'end'].includes(r.ha) ? r.ha : ''; o.va = ['top', 'bottom'].includes(r.va) ? r.va : ''; o.tone = r.tone === 'dark' ? 'dark' : ''; o.shade = ['strong', 'none'].includes(r.shade) ? r.shade : ''; o.tsize = r.tsize === 'large' ? 'large' : ''; o.fx = ['none', 'fade', 'rise', 'slide', 'zoom'].includes(r.fx) ? r.fx : '';
+        o.sub_ar = String(r.sub_ar || '').trim(); o.sub_en = String(r.sub_en || '').trim(); o.ha = ['center', 'end', 'left', 'right'].includes(r.ha) ? r.ha : ''; o.va = ['top', 'bottom'].includes(r.va) ? r.va : ''; o.tone = r.tone === 'dark' ? 'dark' : ''; o.shade = ['strong', 'none'].includes(r.shade) ? r.shade : ''; o.tsize = r.tsize === 'large' ? 'large' : ''; o.fx = ['none', 'fade', 'rise', 'slide', 'zoom'].includes(r.fx) ? r.fx : '';
         o.buttons = (Array.isArray(r.buttons) ? r.buttons : []).slice(0, 3).map(b => ({ ar: String(b.ar || '').trim(), en: String(b.en || '').trim(), href: String(b.href || '').trim(), style: ['light', 'outline'].includes(b.style) ? b.style : 'solid' })).filter(b => b.ar || b.en); }
       else if (r.type === 'text') { o.html_ar = r.html_ar || ''; o.html_en = r.html_en || ''; o.size = ['small', 'large'].includes(r.size) ? r.size : ''; o.full = rowBool(r.full, false); }
       if (['collection', 'products', 'latest', 'categories'].includes(r.type)) { o.tfont = FONT_SPEC[r.tfont] ? r.tfont : ''; o.bfont = FONT_SPEC[r.bfont] ? r.bfont : ''; o.tweight = ['600', '700', '800'].includes(String(r.tweight)) ? String(r.tweight) : ''; o.tscale = ['0.8', '1.2', '1.4'].includes(String(r.tscale)) ? Number(r.tscale) : ''; o.fit = ['contain', 'plain', 'cover'].includes(r.fit) ? r.fit : ''; }
@@ -8633,7 +8674,7 @@ ${invoiceFootHtml('')}`;
         inp('cta_ar', 'Simple button text (Arabic) \u2014 the whole picture is the link', 'dir="rtl"') + inp('cta_en', 'Simple button text (English)') +
         '<div style="grid-column:1/-1"><div class="sa-sec" style="margin:10px 0 2px">Text and buttons on the picture</div><div class="sa-note">The title is the field “Title” above. Add a short text under it and up to 3 real buttons, each with its own link. Buttons are shown only in the language they are written in.</div></div>' +
         '<div><label>Text under the title (Arabic)</label><textarea rows="2" dir="rtl" data-r="' + n + '.sub_ar">' + E(r.sub_ar) + '</textarea></div><div><label>Text under the title (English)</label><textarea rows="2" data-r="' + n + '.sub_en">' + E(r.sub_en) + '</textarea></div><div></div>' +
-        '<div><label>Text position — across</label>' + sel('ha', [['', 'Start (left in English, right in Arabic)'], ['center', 'Center'], ['end', 'End']]) + '</div>' +
+        '<div><label>Text position — across</label>' + sel('ha', [['', 'Start \u2014 right in Arabic, left in English'], ['end', 'End \u2014 left in Arabic, right in English'], ['left', 'Always on the left'], ['center', 'Center'], ['right', 'Always on the right']]) + '</div>' +
         '<div><label>Text position — up / down</label>' + sel('va', [['', 'Middle'], ['top', 'Top'], ['bottom', 'Bottom']]) + '</div>' +
         '<div><label>Text colour</label>' + sel('tone', [['', 'White text (dark shade)'], ['dark', 'Dark text (light shade)']]) + '</div>' +
         '<div><label>Shade behind the text</label>' + sel('shade', [['', 'Soft'], ['strong', 'Strong'], ['none', 'None']]) + '</div>' +
@@ -8975,7 +9016,7 @@ ${invoiceFootHtml('')}`;
     }
     function openCollection(id) {
       const c = st.cols.find(x => x.id === id);
-      const blank = { id: '', match_name: '', slug: '', title: '', title_en: '', description: '', description_en: '', seo_title: '', seo_title_en: '', seo_description: '', seo_description_en: '', image: '', published: true, show_in_menu: true, show_on_home: true, parent_ids: [], sort_order: st.cols.length };
+      const blank = { id: '', match_name: '', slug: '', title: '', title_en: '', description: '', description_en: '', seo_title: '', seo_title_en: '', seo_description: '', seo_description_en: '', menu_title: '', menu_title_en: '', image: '', published: true, show_in_menu: true, show_on_home: true, parent_ids: [], sort_order: st.cols.length };
       st.cd = { isNew: !c, msg: '', f: Object.assign({}, blank, c || {}, { parent_ids: c ? pidsOf(c).slice() : [] }), members: c ? membersOf(c.match_name).map(g => g[0].handle) : [], add: [], remove: [] };
       PK['cd.parents'] = { kind: 'colids', ph: 'Put it under — search Arabic or English (leave empty for top level)', get: () => st.cd.f.parent_ids, set: v => { st.cd.f.parent_ids = v; }, exclude: () => { const me = st.cd.f.id; return me ? [me].concat(Array.from(descIds(me))) : []; } };
       PK['cd.add'] = { kind: 'handles', ph: 'Add products — search Arabic or English name or SKU', get: () => st.cd.add, set: v => { st.cd.add = v; }, exclude: () => st.cd.members.filter(h => !st.cd.remove.includes(h)) };
@@ -8989,7 +9030,7 @@ ${invoiceFootHtml('')}`;
       return '<div class="sa-mod"><div class="sa-card"><h3>' + (cd.isNew ? 'New collection' : 'Edit collection') + '</h3>' +
         '<div class="sa-g3">' + chk('published', 'Visible on website') + chk('show_in_menu', 'Show in menu') + chk('show_on_home', 'Show on home page') + '</div>' +
         '<div class="sa-sec">Under which collections? (it can be under more than one)</div>' + pkHtml('cd.parents') + '<div class="sa-g2"><div><label>Order in menu (smaller first)</label>' + i('sort_order', 0, 'number') + '</div></div>' +
-        '<div class="sa-sec">Names and description</div><div class="sa-g2"><div>' + cnt('Name (Arabic)', i('title')) + '</div><div>' + cnt('Name (English)', i('title_en')) + '</div><div>' + cnt('Description (Arabic)', ta('description')) + '</div><div>' + cnt('Description (English)', ta('description_en')) + '</div></div>' +
+        '<div class="sa-sec">Names and description</div><div class="sa-note">The <b>name</b> is the full, unique name of the collection (its page title), for example \u201cLavazza Beans\u201d. The <b>name in the menu</b> is optional: a short label shown in the website menu and under its parent, for example \u201cLavazza\u201d.</div><div class="sa-g2"><div>' + cnt('Name (Arabic)', i('title')) + '</div><div>' + cnt('Name (English)', i('title_en')) + '</div><div>' + cnt('Name in the menu (Arabic) \u2014 optional', i('menu_title')) + '</div><div>' + cnt('Name in the menu (English) \u2014 optional', i('menu_title_en')) + '</div><div>' + cnt('Description (Arabic)', ta('description')) + '</div><div>' + cnt('Description (English)', ta('description_en')) + '</div></div>' +
         '<div class="sa-sec">Search engine (SEO)</div><div class="sa-g2"><div>' + cnt('SEO title (Arabic)', i('seo_title', 60), 1) + '</div><div>' + cnt('SEO title (English)', i('seo_title_en', 60), 1) + '</div><div>' + cnt('Meta description (Arabic)', ta('seo_description', 160), 1) + '</div><div>' + cnt('Meta description (English)', ta('seo_description_en', 160), 1) + '</div></div>' +
         '<div class="sa-note">' + (cd.isNew ? 'The web address is created from the name when you save.' : 'Web address: <b>' + E(f.slug) + '</b>') + '</div>' +
         '<div class="sa-sec">Image</div><div class="sa-bar">' + (f.image ? '<img class="sa-th" src="' + E(f.image) + '" alt="">' : '') + '<button class="sa-btn" data-act="colimg">Upload image</button><input type="file" id="saColFile" accept="image/*" hidden>' + (f.image ? '<button class="sa-btn dan" data-act="colimgrm">Remove</button>' : '') + '</div>' +
@@ -9000,7 +9041,10 @@ ${invoiceFootHtml('')}`;
       const cd = st.cd, f = cd.f, say = m => { cd.msg = m; const el = $('saCMsg'); if (el) el.textContent = m; };
       const name = String(f.title || f.title_en || '').trim(); if (!name) return say('Enter a name (Arabic or English)');
       const t = k => (String(f[k] || '').trim() || null);
-      const row = { title: name, title_en: t('title_en'), description: t('description'), description_en: t('description_en'), seo_title: t('seo_title'), seo_title_en: t('seo_title_en'), seo_description: t('seo_description'), seo_description_en: t('seo_description_en'),
+      const lc = x => String(x || '').trim().toLowerCase();                       // every collection has its own full name (the menu name can repeat)
+      const clash = st.cols.find(c => c.id !== f.id && ((lc(f.title) && lc(c.title) === lc(f.title)) || (lc(f.title_en) && lc(c.title_en) === lc(f.title_en))));
+      if (clash) return say('Another collection already has this name: \u201c' + (clash.title || clash.title_en) + '\u201d. Give each collection its own full name; use \u201cName in the menu\u201d for the short label.');
+      const row = { title: name, title_en: t('title_en'), description: t('description'), description_en: t('description_en'), seo_title: t('seo_title'), seo_title_en: t('seo_title_en'), seo_description: t('seo_description'), seo_description_en: t('seo_description_en'), menu_title: t('menu_title'), menu_title_en: t('menu_title_en'),
         image: t('image'), published: !!f.published, show_in_menu: !!f.show_in_menu, show_on_home: !!f.show_on_home, parent_ids: (f.parent_ids || []).slice(), parent_id: (f.parent_ids || [])[0] || null, sort_order: num(f.sort_order) || 0 };
       let match = f.match_name;
       if (cd.isNew) {
@@ -9107,7 +9151,9 @@ ${invoiceFootHtml('')}`;
           '<div class="sa-bar">' + (s.image ? '<img class="sa-th" src="' + E(s.image) + '" alt="">' : '<span class="sa-th"></span>') + '<button class="sa-btn" data-slimg="' + n + '|image">Upload desktop image</button>' + (s.mobile ? '<img class="sa-th" src="' + E(s.mobile) + '" alt="">' : '') + '<button class="sa-btn" data-slimg="' + n + '|mobile">Upload mobile image (optional)</button></div>' +
           '<div class="sa-g2"><div><label>Title (Arabic)</label><input data-s="' + n + '.title_ar" dir="rtl" value="' + E(s.title_ar) + '"></div><div><label>Title (English)</label><input data-s="' + n + '.title_en" value="' + E(s.title_en) + '"></div>' +
           '<div><label>Subtitle (Arabic)</label><input data-s="' + n + '.subtitle_ar" dir="rtl" value="' + E(s.subtitle_ar) + '"></div><div><label>Subtitle (English)</label><input data-s="' + n + '.subtitle_en" value="' + E(s.subtitle_en) + '"></div>' +
-          '<div><label>Button text (Arabic)</label><input data-s="' + n + '.cta_ar" dir="rtl" value="' + E(s.cta_ar) + '"></div><div><label>Button text (English)</label><input data-s="' + n + '.cta_en" value="' + E(s.cta_en) + '"></div></div>' +
+          '<div><label>Button text (Arabic)</label><input data-s="' + n + '.cta_ar" dir="rtl" value="' + E(s.cta_ar) + '"></div><div><label>Button text (English)</label><input data-s="' + n + '.cta_en" value="' + E(s.cta_en) + '"></div>' +
+          '<div><label>Text position \u2014 across</label><select data-s="' + n + '.ha">' + [['', 'Start \u2014 right in Arabic, left in English'], ['end', 'End \u2014 left in Arabic, right in English'], ['left', 'Always on the left'], ['center', 'Center'], ['right', 'Always on the right']].map(o => '<option value="' + o[0] + '"' + ((s.ha || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select></div>' +
+          '<div><label>Text position \u2014 up / down</label><select data-s="' + n + '.va">' + [['', 'Middle'], ['top', 'Top'], ['bottom', 'Bottom']].map(o => '<option value="' + o[0] + '"' + ((s.va || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select></div></div>' +
           '<label>Button link ({lang} becomes ar or en, e.g. /{lang}/collections/tools/)</label><input data-s="' + n + '.href" value="' + E(s.href) + '"></div>').join('') +
         '<button class="sa-btn" data-act="addslide">+ Add slide</button><input type="file" id="saSlFile" accept="image/*" hidden>'],
         ['fonts', '🔤', 'Fonts', 'The typefaces and text sizes of the whole website, set separately for Arabic and English pages.', fontsPaneHtml(sel)],
@@ -9186,7 +9232,7 @@ ${invoiceFootHtml('')}`;
     function sheets() {
       const pr = st.products.map(x => ({ Handle: x.handle, SKU: x.sku, 'Title (Arabic)': x.title_arabic, 'Title (English)': x.title, 'Description (Arabic)': x.description_ar, 'Description (English)': x.description, 'SEO title (Arabic)': x.seo_title_ar, 'SEO title (English)': x.seo_title, 'Meta description (Arabic)': x.seo_description_ar, 'Meta description (English)': x.seo_description,
         'Option 1 name': x.option1_name, 'Option 1 value': x.option1_value, 'Option 2 name': x.option2_name, 'Option 2 value': x.option2_value, 'Sale price': x.sale_price, 'Price before discount': x.regular_price, 'Real stock': x.balance, 'Website status': String(x.status || '').toUpperCase() === 'ACTIVE' ? 'Visible' : 'Hidden', 'Stock display': x.store_stock_mode || 'auto', Collections: x.collections, Images: x.images, 'Option image': x.variant_image, 'Weight (kg)': (x.weight == null || Number(x.weight) === 0) ? '' : Number(x.weight), 'Product link (read only)': (x.url_slug || x.handle) ? siteUrl() + '/ar/products/' + encodeURIComponent(slugify(x.url_slug || x.handle)) + '/' : '' }));
-      const cl = st.cols.map(c => { const ps = pidsOf(c).map(id => st.cols.find(y => y.id === id)).filter(Boolean); return { 'Name (Arabic)': c.title, 'Name (English)': c.title_en, 'Parent keys': ps.map(x => x.match_name).join(' | '), 'Parents (names)': ps.map(x => x.title).join(' | '), 'Web address': c.slug, Key: c.match_name, Visible: c.published ? 'Yes' : 'No', 'In menu': c.show_in_menu ? 'Yes' : 'No', 'On home': c.show_on_home ? 'Yes' : 'No', Order: c.sort_order, Products: membersOf(c.match_name).length, 'SEO title (Arabic)': c.seo_title, 'SEO title (English)': c.seo_title_en, 'Meta description (Arabic)': c.seo_description, 'Meta description (English)': c.seo_description_en, 'Description (Arabic)': c.description, 'Description (English)': c.description_en, Image: c.image }; });
+      const cl = st.cols.map(c => { const ps = pidsOf(c).map(id => st.cols.find(y => y.id === id)).filter(Boolean); return { 'Name (Arabic)': c.title, 'Name (English)': c.title_en, 'Menu name (Arabic)': c.menu_title, 'Menu name (English)': c.menu_title_en, 'Parent keys': ps.map(x => x.match_name).join(' | '), 'Parents (names)': ps.map(x => x.title).join(' | '), 'Web address': c.slug, Key: c.match_name, Visible: c.published ? 'Yes' : 'No', 'In menu': c.show_in_menu ? 'Yes' : 'No', 'On home': c.show_on_home ? 'Yes' : 'No', Order: c.sort_order, Products: membersOf(c.match_name).length, 'SEO title (Arabic)': c.seo_title, 'SEO title (English)': c.seo_title_en, 'Meta description (Arabic)': c.seo_description, 'Meta description (English)': c.seo_description_en, 'Description (Arabic)': c.description, 'Description (English)': c.description_en, Image: c.image }; });
       const ds = st.discounts.map(d => ({ Name: d.name, Code: d.code || '(automatic)', Type: d.kind, Value: d.value, 'Applies to': d.applies_to, 'Min subtotal': d.min_subtotal, 'Min qty': d.min_qty, SKUs: (d.skus || []).join(', '), Collections: (d.collections || []).join(', '), Starts: d.starts_at, Ends: d.ends_at, Active: d.active ? 'Yes' : 'No', Used: d.used_count }));
       return [['Products', pr], ['Collections', cl], ['Discounts', ds]];
     }
@@ -9263,7 +9309,7 @@ ${invoiceFootHtml('')}`;
       if (head.has('Real stock')) warn.push('The "Real stock" column is ignored — stock is edited in Inventory.');
       return { errors, warn, payloads, create, update, same };
     }
-    const CCOL = { title: 'Name (Arabic)', title_en: 'Name (English)', match_name: 'Key', slug: 'Web address', published: 'Visible', show_in_menu: 'In menu', show_on_home: 'On home', sort_order: 'Order', parents: 'Parent keys',
+    const CCOL = { title: 'Name (Arabic)', title_en: 'Name (English)', menu_title: 'Menu name (Arabic)', menu_title_en: 'Menu name (English)', match_name: 'Key', slug: 'Web address', published: 'Visible', show_in_menu: 'In menu', show_on_home: 'On home', sort_order: 'Order', parents: 'Parent keys',
       seo_title: 'SEO title (Arabic)', seo_title_en: 'SEO title (English)', seo_description: 'Meta description (Arabic)', seo_description_en: 'Meta description (English)', description: 'Description (Arabic)', description_en: 'Description (English)', image: 'Image' };
     function planCollections(rows) {
       const head = new Set(Object.keys(rows[0] || {})), has = k => head.has(CCOL[k]), errors = [], warn = [], items = [], keys = new Set(); let create = 0, update = 0, same = 0;
@@ -9275,7 +9321,7 @@ ${invoiceFootHtml('')}`;
         if (keys.has(key)) { errors.push('Row ' + line + ': Key "' + key + '" appears twice'); return; } keys.add(key);
         const ex = st.cols.find(c => c.match_name === key), row = {};
         const txt = k => { if (has(k)) row[k] = cell(r, CCOL[k]) || null; };
-        ['title', 'title_en', 'seo_title', 'seo_title_en', 'seo_description', 'seo_description_en', 'description', 'description_en', 'image'].forEach(txt);
+        ['title', 'title_en', 'menu_title', 'menu_title_en', 'seo_title', 'seo_title_en', 'seo_description', 'seo_description_en', 'description', 'description_en', 'image'].forEach(txt);
         ['published', 'show_in_menu', 'show_on_home'].forEach(k => { if (has(k)) row[k] = yes(cell(r, CCOL[k])); });
         if (has('sort_order')) { const n = parseFloat(cell(r, CCOL.sort_order)); row.sort_order = isNaN(n) ? 0 : n; }
         if (!ex) { row.match_name = key; row.slug = slugify((has('slug') && cell(r, CCOL.slug)) || row.title_en || key); if (!row.title) row.title = key; if (!row.slug) { errors.push('Row ' + line + ': cannot make a web address from "' + key + '"'); return; } if (st.cols.some(c => c.slug === row.slug)) { errors.push('Row ' + line + ': web address "' + row.slug + '" is already used'); return; } }
