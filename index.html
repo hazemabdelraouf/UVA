@@ -8353,7 +8353,7 @@ ${invoiceFootHtml('')}`;
     };
     const slugify = t => enSlug(t);          // every web address uses English letters (Arabic is transliterated)
     const imgs = txt => String(txt || '').split(/\s+/).filter(u => /^https?:\/\//i.test(u));
-    const st = { mk: null, seoOpen: '', utm: { page: '/ar/', custom: '', source: 'facebook', medium: 'paid_social', campaign: '', content: '', term: '' }, ov: null, carts: [], cartFilter: 'new', imp: null, tab: 'overview', gl: { gov: '', q: '', miss: false, draft: {}, msg: null }, products: [], cols: [], discounts: [], events: [], q: '', filter: 'all', cq: '', ed: null, dd: null, cd: null, app: null, feed: null, site: 0, pubState: 'ok', pubText: 'Website is up to date' };
+    const st = { mk: null, seoOpen: '', utm: { page: '/ar/', custom: '', source: 'facebook', medium: 'paid_social', campaign: '', content: '', term: '' }, ov: null, pending: 0, an: null, anP: '7', anFrom: '', anTo: '', ovx: null, ovxAt: 0, carts: [], cartFilter: 'new', imp: null, tab: 'overview', gl: { gov: '', q: '', miss: false, draft: {}, msg: null }, products: [], cols: [], discounts: [], events: [], q: '', filter: 'all', cq: '', ed: null, dd: null, cd: null, app: null, feed: null, site: 0, pubState: 'ok', pubText: 'Website is up to date' };
 
     const css = document.createElement('style');
     css.textContent = `
@@ -8488,7 +8488,7 @@ ${invoiceFootHtml('')}`;
       const mrow = (r.data || []).find(x => x.key === 'marketing'), mv = (mrow && mrow.value) || {};
       st.mk = Object.assign({ meta_pixel: '', tiktok_pixel: '', snap_pixel: '', ga4: '', gads_id: '', gads_purchase_label: '', clarity: '', consent_mode: 'off', consent_text_ar: '', consent_text_en: '', verify_google: '', verify_bing: '', verify_meta: '', verify_pinterest: '', head_html: '', ai_search_bots: 'true', ai_training_bots: 'true', indexnow_key: '', test_on_preview: 'false' }, Object.fromEntries(Object.entries(mv).filter(([k]) => k !== 'social').map(([k, v]) => [k, typeof v === 'boolean' ? String(v) : v])), { social: Object.assign({ facebook: '', instagram: '', tiktok: '', youtube: '', x: '', snapchat: '' }, mv.social || {}) });
       const a = (row && row.value) || {};
-      st.app = { hero: Object.assign({ height_vh: 82, autoplay: 6, slides: [] }, a.hero || {}), products: Object.assign({ cols_desktop: 4, cols_mobile: 2, ratio: '1/1', image_fit: 'contain', quick_add: true }, a.products || {}), fonts: Object.assign({ ar_body: 'Cairo', ar_head: '', en_body: 'Cairo', en_head: 'Playfair Display', weight: '', body_size: '16', head_scale: '1' }, a.fonts || {}),
+      st.app = { hero: Object.assign({ height_vh: 82, autoplay: 6, show_cta: 'true', slides: [] }, a.hero || {}), products: Object.assign({ cols_desktop: 4, cols_mobile: 2, ratio: '1/1', image_fit: 'contain', quick_add: true }, a.products || {}), fonts: Object.assign({ ar_body: 'Cairo', ar_head: '', en_body: 'Cairo', en_head: 'Playfair Display', weight: '', body_size: '16', head_scale: '1' }, a.fonts || {}),
         announcement: Object.assign({ ar: '', en: '' }, a.announcement || {}), anim: Object.assign({ on: 'true', hero: 'fade', reveal: 'fade-up', hover: 'lift', speed: 'normal', pulse: 'false', txt: 'rise', txt_start: 'normal', txt_stagger: 'soft', img_fx: 'fade', img_all: 'false' }, Object.fromEntries(Object.entries(a.anim || {}).map(([k, v]) => [k, String(v)]))), home: Object.assign({ title_ar: '', title_en: '', desc_ar: '', desc_en: '', latest_count: 12, show_categories: true }, a.home || {}), sections: fixedRows(a.sections), footer: Object.assign({}, FOOT_DEFAULTS, Object.fromEntries(Object.entries(a.footer || {}).map(([k, v]) => [k, typeof v === 'boolean' ? String(v) : v]))), pages: mergePages(a.pages) };
     }
     async function openAdmin() {
@@ -8786,9 +8786,9 @@ ${invoiceFootHtml('')}`;
     }
 
     // ============ render ============
-    const TABS = [['overview', 'Overview'], ['products', 'Products'], ['collections', 'Collections'], ['discounts', 'Discounts'], ['carts', 'Abandoned carts'], ['locations', 'Locations'], ['appearance', 'Appearance'], ['marketing', 'Marketing'], ['integrations', 'Integrations']];
-    const tabLabel = t => t[1] + (t[0] === 'carts' && st.ov && st.ov.abandoned ? ' (' + st.ov.abandoned + ')' : '');
-    const tabHtml = () => ({ overview: overviewHtml, products: productsHtml, collections: collectionsHtml, discounts: discountsHtml, carts: cartsHtml, locations: locationsHtml, appearance: appearanceHtml, marketing: marketingHtml, integrations: integrationsHtml })[st.tab]();
+    const TABS = [['overview', 'Overview'], ['analytics', 'Analytics'], ['products', 'Products'], ['collections', 'Collections'], ['discounts', 'Discounts'], ['carts', 'Abandoned carts'], ['locations', 'Locations'], ['appearance', 'Appearance'], ['marketing', 'Marketing'], ['integrations', 'Integrations']];
+    const tabLabel = t => t[1] + (t[0] === 'carts' && st.pending ? ' (' + st.pending + ')' : '');
+    const tabHtml = () => ({ overview: overviewHtml, analytics: analyticsHtml, products: productsHtml, collections: collectionsHtml, discounts: discountsHtml, carts: cartsHtml, locations: locationsHtml, appearance: appearanceHtml, marketing: marketingHtml, integrations: integrationsHtml })[st.tab]();
     function render() {
       const prevTabs = top.querySelector('.sa-tabs'), prevLeft = prevTabs ? prevTabs.scrollLeft : 0;
       top.innerHTML = '<div class="sa-hd"><b>Store admin</b><div class="sa-tabs">' + TABS.map(t => '<button data-tab="' + t[0] + '" class="' + (st.tab === t[0] ? 'on' : '') + '">' + tabLabel(t) + '</button>').join('') +
@@ -9108,16 +9108,21 @@ ${invoiceFootHtml('')}`;
     // ============ appearance ============
     const tf = (path, label, ph, max, area) => { const v = path.split('.').reduce((o, k) => o[k], st.app); return '<div>' + cnt(label, (area ? '<textarea' : '<input') + ' data-a="' + path + '"' + (ph ? ' placeholder="' + E(ph) + '"' : '') + (max ? ' data-max="' + max + '"' : '') + (area ? '>' + E(v) + '</textarea>' : ' value="' + E(v) + '">'), max) + '</div>'; };
 
+    function varsHtml() {
+      const f = (st.app && st.app.footer) || {}, ph = String(f.phone || '').split(/[\n\r,;|،؛]+/).map(x => x.trim()).filter(Boolean);
+      const rows = [['{{contact}}', 'All contact details as a list: WhatsApp, phones, email, address, working hours', ''], ['{{wa}}', 'WhatsApp number (link)', ''], ['{{phone}}', 'First phone number (link)', ph[0] || ''], ['{{phones}}', 'All phone numbers (links)', ph.join(' · ')], ['{{email}}', 'Email (link)', f.email || ''], ['{{address}}', 'Address in the page language', f.address_ar || f.address_en || ''], ['{{hours}}', 'Working hours in the page language', f.hours_ar || f.hours_en || ''], ['{{brand}}', 'Brand name (UVA / أوڤا)', ''], ['{{slogan}}', 'Short slogan', ''], ['{{site}}', 'Website address', ''], ['{{lang}}', 'ar or en, for links like /{{lang}}/pages/refund-policy/', '']];
+      return '<div class="sa-sec">Variables you can use inside page texts</div><div class="sa-note">Press Copy, then paste it into any page text. The words are replaced when the website is published. Phone numbers, email, address and hours come from the Footer section; an empty field shows nothing.</div><table class="sa-tbl"><tr><th>Variable</th><th>Shows</th><th>Now</th><th></th></tr>' + rows.map(r => '<tr><td><span class="sa-code">' + E(r[0]) + '</span></td><td>' + E(r[1]) + '</td><td dir="auto">' + (r[2] ? E(r[2]) : '<span class="sa-s">—</span>') + '</td><td><button class="sa-btn" data-copy="' + E(r[0]) + '">Copy</button></td></tr>').join('') + '</table>';
+    }
     function footerPagesHtml(sel, tf) {
       const a = st.app, yn = p => sel(p, [['true', 'Show'], ['false', 'Hide']]);
-      let h = '<div class="sa-note">The footer has: a strip of 4 trust badges, the logo with a short text, the categories, customer-care links (the pages you tick below) and your contact details. Social-media links come from the Marketing tab.</div>' +
+      let h = '<div class="sa-note">The footer has: a strip of 4 trust badges, the logo with a short text, the categories, customer-care links (the pages you tick below) and your contact details. Social-media links come from the Marketing tab. To show the phone numbers, email, address or hours inside a page text, use the variables listed under Pages.</div>' +
         '<div class="sa-g3"><div><label>Trust strip (shipping · cash on delivery · 14-day returns · WhatsApp)</label>' + yn('footer.trust') + '</div><div><label>Categories column</label>' + yn('footer.cats') + '</div><div><label>How many categories to list</label><input data-a="footer.cats_count" type="number" min="2" max="12" value="' + E(a.footer.cats_count) + '"></div>' +
         '<div><label>Customer-care column (policy pages)</label>' + yn('footer.care') + '</div><div><label>Contact column</label>' + yn('footer.contact') + '</div><div><label>“Cash on delivery” note in the bottom bar</label>' + yn('footer.pay') + '</div></div>' +
         '<div class="sa-g2">' + tf('footer.about_ar', 'Short text under the logo (Arabic)', 'Empty = the slogan', 400, 1) + tf('footer.about_en', 'Short text under the logo (English)', 'Empty = the slogan', 400, 1) + '</div>' +
-        '<div class="sa-g2">' + tf('footer.phone', 'Phone (optional — WhatsApp is always shown)', '', 40) + tf('footer.email', 'Email (optional)', '', 120) + tf('footer.address_ar', 'Address (Arabic)', '', 240) + tf('footer.address_en', 'Address (English)', '', 240) + tf('footer.hours_ar', 'Working hours (Arabic)', '', 160) + tf('footer.hours_en', 'Working hours (English)', '', 160) + '</div>' +
+        '<div class="sa-g2">' + tf('footer.phone', 'Phone numbers — one per line (optional; WhatsApp is always shown)', '01000000000', 240, 1) + tf('footer.email', 'Email (optional)', '', 120) + tf('footer.address_ar', 'Address (Arabic)', '', 240) + tf('footer.address_en', 'Address (English)', '', 240) + tf('footer.hours_ar', 'Working hours (Arabic)', '', 160) + tf('footer.hours_en', 'Working hours (English)', '', 160) + '</div>' +
         '<div class="sa-g2">' + tf('footer.legal_ar', 'Legal line, e.g. commercial register / tax no. (Arabic)', '', 200) + tf('footer.legal_en', 'Legal line (English)', '', 200) + tf('footer.copy_ar', 'Copyright text (Arabic) — empty = automatic', '', 200) + tf('footer.copy_en', 'Copyright text (English) — empty = automatic', '', 200) + '</div>';
       let ph = '<div class="sa-note">Each page below becomes a page on the website (address shown inside it). The standard texts are ready — edit them freely, or press “Restore standard text”. ' +
-        'You can write simple HTML (&lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;a href&gt;). Variables: <b>{{brand}}</b> (UVA / أوڤا), <b>{{slogan}}</b>, <b>{{wa}}</b> (WhatsApp number link), <b>{{contact}}</b> (your contact details list), <b>{{lang}}</b> (ar or en, for links like /{{lang}}/pages/refund-policy/). Do not add the page title inside the text — it is added automatically.</div>';
+        'You can write simple HTML (&lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;a href&gt;). Do not add the page title inside the text — it is added automatically.</div>' + varsHtml();
       ph += a.pages.map((p, n) => {
         const flags = (p.on === 'false' ? ' · <span style="color:#b91c1c">Hidden</span>' : '') + (p.footer === 'false' ? ' · not in footer' : '') + (p.custom ? ' · custom' : '');
         return '<details class="sa-help" style="margin:8px 0"><summary>' + E(p.title_en || p.title_ar || p.slug) + ' <span style="font-weight:500;color:var(--muted)">— ' + E(p.title_ar) + flags + '</span></summary><div class="sa-hbody">' +
@@ -9152,12 +9157,12 @@ ${invoiceFootHtml('')}`;
       const fp = footerPagesHtml(sel, tf);
       const panes = [
         ['banner', '🖼️', 'Banner', 'The big slider at the top of the home page. Each slide has its own picture, text and button.',
-          '<div class="sa-g3"><div><label>Banner height (% of the screen)</label><input data-a="hero.height_vh" type="number" min="40" max="100" value="' + E(a.hero.height_vh) + '"></div><div><label>Seconds per slide</label><input data-a="hero.autoplay" type="number" min="3" max="20" value="' + E(a.hero.autoplay) + '"></div></div>' +
+          '<div class="sa-g3"><div><label>Banner height (% of the screen)</label><input data-a="hero.height_vh" type="number" min="40" max="100" value="' + E(a.hero.height_vh) + '"></div><div><label>Seconds per slide</label><input data-a="hero.autoplay" type="number" min="3" max="20" value="' + E(a.hero.autoplay) + '"></div><div><label>Button on the banner</label>' + sel('hero.show_cta', [['true', 'Show (you can still hide it per slide)'], ['false', 'Hide on all slides']]) + '</div></div>' +
         a.hero.slides.map((s, n) => '<div class="sa-sl"><div class="sa-bar" style="margin-bottom:6px"><b>Slide ' + (n + 1) + '</b><span style="flex:1"></span><button class="sa-btn" data-slup="' + n + '">↑</button><button class="sa-btn" data-sldn="' + n + '">↓</button><button class="sa-btn dan" data-sldel="' + n + '">Delete</button></div>' +
           '<div class="sa-bar">' + (s.image ? '<img class="sa-th" src="' + E(s.image) + '" alt="">' : '<span class="sa-th"></span>') + '<button class="sa-btn" data-slimg="' + n + '|image">Upload desktop image</button>' + (s.mobile ? '<img class="sa-th" src="' + E(s.mobile) + '" alt="">' : '') + '<button class="sa-btn" data-slimg="' + n + '|mobile">Upload mobile image (optional)</button></div>' +
           '<div class="sa-g2"><div><label>Title (Arabic)</label><input data-s="' + n + '.title_ar" dir="rtl" value="' + E(s.title_ar) + '"></div><div><label>Title (English)</label><input data-s="' + n + '.title_en" value="' + E(s.title_en) + '"></div>' +
           '<div><label>Subtitle (Arabic)</label><input data-s="' + n + '.subtitle_ar" dir="rtl" value="' + E(s.subtitle_ar) + '"></div><div><label>Subtitle (English)</label><input data-s="' + n + '.subtitle_en" value="' + E(s.subtitle_en) + '"></div>' +
-          '<div><label>Button text (Arabic)</label><input data-s="' + n + '.cta_ar" dir="rtl" value="' + E(s.cta_ar) + '"></div><div><label>Button text (English)</label><input data-s="' + n + '.cta_en" value="' + E(s.cta_en) + '"></div>' +
+          '<div><label>Button on this slide</label><select data-s="' + n + '.show_cta"><option value="true"' + (String(s.show_cta) !== 'false' ? ' selected' : '') + '>Show</option><option value="false"' + (String(s.show_cta) === 'false' ? ' selected' : '') + '>Hide</option></select></div><div></div><div><label>Button text (Arabic)</label><input data-s="' + n + '.cta_ar" dir="rtl" value="' + E(s.cta_ar) + '"></div><div><label>Button text (English)</label><input data-s="' + n + '.cta_en" value="' + E(s.cta_en) + '"></div>' +
           '<div><label>Text position \u2014 across</label><select data-s="' + n + '.ha">' + [['', 'Start \u2014 right in Arabic, left in English'], ['end', 'End \u2014 left in Arabic, right in English'], ['left', 'Always on the left'], ['center', 'Center'], ['right', 'Always on the right']].map(o => '<option value="' + o[0] + '"' + ((s.ha || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select></div>' +
           '<div><label>Text position \u2014 up / down</label><select data-s="' + n + '.va">' + [['', 'Middle'], ['top', 'Top'], ['bottom', 'Bottom']].map(o => '<option value="' + o[0] + '"' + ((s.va || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select></div></div>' +
           '<label>Button link ({lang} becomes ar or en, e.g. /{lang}/collections/tools/)</label><input data-s="' + n + '.href" value="' + E(s.href) + '"></div>').join('') +
@@ -9410,8 +9415,9 @@ ${invoiceFootHtml('')}`;
       if (root.hidden || st.tab !== 'overview') { clearInterval(ovTimer); ovTimer = null; return; }
       const r = await SB().rpc('store_admin_overview');
       st.ov = (r.error || (r.data && r.data.error)) ? { error: r.error ? r.error.message : r.data.error } : r.data;
+      await loadPending(); await loadOvExtra();
       if (st.tab === 'overview') main.innerHTML = tabHtml();
-      top.querySelectorAll('[data-tab="carts"]').forEach(b => { b.textContent = 'Abandoned carts' + (st.ov && st.ov.abandoned ? ' (' + st.ov.abandoned + ')' : ''); });
+      syncCartBadge();
     }
     function overviewHtml() {
       const o = st.ov; if (!o) return '<p class="sa-note">Loading…</p>';
@@ -9420,14 +9426,121 @@ ${invoiceFootHtml('')}`;
       const card = (n, l) => '<div class="sa-card" style="padding:14px;box-shadow:none;border:1px solid var(--line);text-align:center"><div style="font-size:26px;font-weight:800">' + n + '</div><div class="sa-s">' + l + '</div></div>';
       const stageName = { browse: 'Browsing', cart: 'Has items in cart', checkout: 'At checkout', ordered: 'Ordered' };
       return '<div class="sa-card" style="max-width:none;box-shadow:none;border:1px solid var(--line);display:flex;gap:18px;align-items:center;flex-wrap:wrap"><div style="font-size:52px;font-weight:800;color:#15803d;line-height:1" id="saOnline">' + E(o.online) + '</div><div><div class="sa-t">Online now</div><div class="sa-s">visitors active in the last 2 minutes · refreshes every 15 seconds</div></div>' +
-        '<div style="flex:1"></div>' + (o.abandoned ? '<button class="sa-btn pri" data-tab="carts">' + o.abandoned + ' abandoned cart' + (o.abandoned === 1 ? '' : 's') + ' waiting →</button>' : '<span class="sa-s">No abandoned carts waiting</span>') + '</div>' +
+        '<div style="flex:1"></div>' + (st.pending ? '<button class="sa-btn pri" data-tab="carts">' + st.pending + ' abandoned cart' + (st.pending === 1 ? '' : 's') + ' not contacted yet →</button>' : '<span class="sa-s">No new abandoned carts to contact</span>') + '</div>' +
         '<div class="sa-sec">Today</div><div class="sa-g3" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">' + card(today.visitors, 'Visitors') + card(today.views, 'Page views') + card(today.carts, 'Added to cart') + card(today.checkouts, 'Reached checkout') + card(today.orders, 'Orders') + card(pct(today.orders, today.visitors), 'Conversion') + '</div>' +
-        '<div class="sa-sec">Last 7 days</div><table class="sa-tbl"><tr><th>Day</th><th>Visitors</th><th>Views</th><th>Carts</th><th>Checkouts</th><th>Orders</th><th>Conversion</th></tr>' + (days.length ? days.map(d => '<tr><td>' + E(d.day) + '</td><td>' + d.visitors + '</td><td>' + d.views + '</td><td>' + d.carts + '</td><td>' + d.checkouts + '</td><td>' + d.orders + '</td><td>' + pct(d.orders, d.visitors) + '</td></tr>').join('') : '<tr><td colspan="7" class="sa-s">No visits recorded yet</td></tr>') + '</table>' +
+        ovExtraHtml() + '<div class="sa-sec">Last 7 days</div><table class="sa-tbl"><tr><th>Day</th><th>Visitors</th><th>Views</th><th>Carts</th><th>Checkouts</th><th>Orders</th><th>Conversion</th></tr>' + (days.length ? days.map(d => '<tr><td>' + E(d.day) + '</td><td>' + d.visitors + '</td><td>' + d.views + '</td><td>' + d.carts + '</td><td>' + d.checkouts + '</td><td>' + d.orders + '</td><td>' + pct(d.orders, d.visitors) + '</td></tr>').join('') : '<tr><td colspan="7" class="sa-s">No visits recorded yet</td></tr>') + '</table>' +
         '<div class="sa-sec">Where visitors come from (7 days)</div><table class="sa-tbl"><tr><th>Source</th><th>Visitors</th><th>Orders</th></tr>' + ((o.sources || []).length ? o.sources.map(s => '<tr><td>' + E(s.source) + '</td><td>' + s.visitors + '</td><td>' + s.orders + '</td></tr>').join('') : '<tr><td colspan="3" class="sa-s">—</td></tr>') + '</table>' +
         '<div class="sa-sec">On the website right now</div><table class="sa-tbl"><tr><th>Page</th><th>Device</th><th>From</th><th>Cart</th><th>Status</th><th>Visit</th></tr>' + ((o.online_list || []).length ? o.online_list.map(s => '<tr><td>' + E(dec(s.path)) + '</td><td>' + E(s.device || '') + '</td><td>' + E(s.source || '') + '</td><td>' + s.cart_items + '</td><td>' + E(stageName[s.stage] || s.stage) + '</td><td>' + E(ago(s.first_seen).replace(' ago', '')) + ' · ' + s.views + ' pages</td></tr>').join('') : '<tr><td colspan="6" class="sa-s">Nobody right now</td></tr>') + '</table>' +
         '<div class="sa-note" style="margin-top:12px">Your own visits are counted too. Open the website once with <b>?notrack=1</b> at the end of the address on each of your own phones and computers to exclude them. Visitors are counted anonymously (no cookies, no IP address).</div>';
     }
     function startOverview() { clearInterval(ovTimer); ovTimer = setInterval(loadOverview, 15000); }
+
+
+    // ============ analytics (any date range) + overview details + "not contacted" badge ============
+    const anAddDays = (s, n) => { const d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+    const anNf = n => new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Number(n) || 0);
+    const anEgp = n => anNf(n) + ' EGP';
+    const anNum = v => Number(v) || 0;
+    const AN_A2E = {"ث": "th", "خ": "kh", "ذ": "dh", "ش": "sh", "غ": "gh", "چ": "ch", "ژ": "zh", "ا": "a", "أ": "a", "إ": "a", "آ": "a", "ؤ": "u", "ئ": "y", "ب": "b", "ت": "t", "ج": "j", "ح": "h", "د": "d", "ر": "r", "ز": "z", "س": "s", "ص": "s", "ض": "d", "ط": "t", "ظ": "z", "ع": "a", "ف": "f", "ق": "q", "ك": "k", "ل": "l", "م": "m", "ن": "n", "ه": "h", "ة": "a", "و": "w", "ى": "a", "ي": "y", "ک": "k", "گ": "g", "پ": "p", "ی": "y", "٠": "0", "١": "1", "٢": "2", "٣": "3", "٤": "4", "٥": "5", "٦": "6", "٧": "7", "٨": "8", "٩": "9"};
+    const anSlug = t => {                                   // same rule the website uses for product addresses
+      let s = String(t == null ? '' : t).replace(/[\u202A-\u202E\u2066-\u2069\u200E\u200F\u0640\u064B-\u065F\u0670\u0621]/g, '');
+      if (!/[\u0600-\u06FF]/.test(s)) return s.trim().toLowerCase().replace(/[\s/?#%&]+/g, '-').replace(/-{2,}/g, '-').replace(/^-+|-+$/g, '');
+      return s.toLowerCase().replace(/[\u0600-\u06FF]/g, ch => (AN_A2E[ch] !== undefined ? AN_A2E[ch] : ' ')).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    };
+    const anProdName = slug => { const s = dec(slug).toLowerCase(), p = (st.products || []).find(x => anSlug(x.slug) === s || String(x.slug || '').toLowerCase() === s); return p ? (p.title_arabic || p.title || s) : s; };
+    const anItemName = r => { if (r.name) return r.name; const p = pBySku(r.sku); return p ? (p.title_arabic || p.title || r.sku) : r.sku; };
+    const anPage = pth => {
+      const d = dec(pth); let m;
+      if (d === '/' || d === '') return 'Home page';
+      if ((m = /^\/products\/([^/]+)\/?$/.exec(d))) return 'Product: ' + anProdName(m[1]);
+      if (/^\/products\/?$/.test(d)) return 'All products';
+      if ((m = /^\/collections\/([^/]+)\/?$/.exec(d))) return 'Collection: ' + m[1];
+      if ((m = /^\/pages\/([^/]+)\/?$/.exec(d))) return 'Page: ' + m[1];
+      return ({ '/cart/': 'Cart', '/checkout/': 'Checkout', '/thank-you/': 'Thank-you (order placed)', '/search/': 'Search results' })[d] || d;
+    };
+    const anCard = (n, l, extra) => '<div class="sa-card" style="padding:14px;box-shadow:none;border:1px solid var(--line);text-align:center"><div style="font-size:24px;font-weight:800;overflow-wrap:anywhere">' + n + '</div><div class="sa-s">' + l + '</div>' + (extra || '') + '</div>';
+
+    function syncCartBadge() { top.querySelectorAll('[data-tab="carts"]').forEach(b => { b.textContent = 'Abandoned carts' + (st.pending ? ' (' + st.pending + ')' : ''); }); }
+    async function loadPending() {                          // only carts you have NOT contacted (or dismissed) count as news
+      const r = await SB().from('store_carts').select('cart_id', { count: 'exact', head: true }).eq('status', 'open').not('phone', 'is', null).neq('phone', '').not('checkout_started_at', 'is', null).is('contacted_at', null).or('dismissed.is.null,dismissed.eq.false');
+      if (!r.error && typeof r.count === 'number') st.pending = r.count;
+    }
+    async function loadOvExtra() {                          // most viewed products / pages for the Overview, refreshed once a minute
+      if (st.ovxAt && Date.now() - st.ovxAt < 60000) return;
+      st.ovxAt = Date.now(); const t = cairoToday();
+      const [w, d] = await Promise.all([SB().rpc('store_admin_analytics', { p: { from: anAddDays(t, -6), to: t } }), SB().rpc('store_admin_analytics', { p: { from: t, to: t } })]);
+      const ok = r => r.data && !r.error && !r.data.error;
+      st.ovx = (ok(w) && ok(d)) ? { w: w.data, t: d.data } : { missing: true };
+    }
+    function ovExtraHtml() {
+      const x = st.ovx; if (!x) return '';
+      if (x.missing) return '<div class="sa-note">Most viewed products and pages will appear here after you run <b>sql/12_store_analytics.sql</b> in Supabase and publish the website with the new events.js.</div>';
+      const w = x.w || {}, d = x.t || {}, dt = d.totals || {};
+      const top3 = (arr, name, val) => arr && arr.length ? '<table class="sa-tbl">' + arr.slice(0, 3).map(r => '<tr><td>' + E(name(r)) + '</td><td style="text-align:right;white-space:nowrap">' + val(r) + '</td></tr>').join('') + '</table>' : '<div class="sa-s">No data yet</div>';
+      const box = (title, inner) => '<div class="sa-card" style="max-width:none;padding:12px 14px;box-shadow:none;border:1px solid var(--line)"><div class="sa-t" style="margin-bottom:4px">' + title + '</div>' + inner + '</div>';
+      const tp = (d.top_products || [])[0], tg = (d.top_pages || [])[0];
+      return '<div class="sa-sec">Today in detail</div><div class="sa-g3" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">' + anCard(anEgp(dt.revenue), 'Sales today') + anCard(anNf(dt.cart_adds), 'Add-to-cart clicks') +
+        anCard(tp ? E(anProdName(tp.slug)) : '—', 'Most viewed product' + (tp ? ' · ' + anNf(tp.views) + ' views' : '')) + anCard(tg ? E(anPage(tg.path)) : '—', 'Most viewed page' + (tg ? ' · ' + anNf(tg.views) + ' views' : '')) + '</div>' +
+        '<div class="sa-sec">Last 7 days — what people look at</div><div class="sa-g2">' +
+        box('Most viewed products', top3(w.top_products, r => anProdName(r.slug), r => anNf(r.views) + ' views')) + box('Most viewed pages', top3(w.top_pages, r => anPage(r.path), r => anNf(r.views) + ' views')) +
+        box('Most added to cart', top3(w.top_added, anItemName, r => anNf(r.qty) + '×')) + box('Best sellers', top3(w.top_sold, anItemName, r => anNf(r.qty) + ' sold')) + '</div>' +
+        '<div style="margin:8px 0"><button class="sa-btn" data-tab="analytics">Open full analytics →</button></div>';
+    }
+
+    function analyticsRange() {
+      const t = cairoToday(), P = st.anP;
+      if (P === 'today') return [t, t];
+      if (P === 'yesterday') { const y = anAddDays(t, -1); return [y, y]; }
+      if (P === '7') return [anAddDays(t, -6), t];
+      if (P === '30') return [anAddDays(t, -29), t];
+      if (P === '90') return [anAddDays(t, -89), t];
+      if (P === 'month') return [t.slice(0, 8) + '01', t];
+      if (P === 'lastmonth') { const end = anAddDays(t.slice(0, 8) + '01', -1); return [end.slice(0, 8) + '01', end]; }
+      return [st.anFrom || anAddDays(t, -6), st.anTo || t];
+    }
+    async function loadAnalytics() {
+      const rg = analyticsRange(); st.an = { loading: true }; if (st.tab === 'analytics') main.innerHTML = tabHtml();
+      const r = await SB().rpc('store_admin_analytics', { p: { from: rg[0], to: rg[1] } });
+      st.an = r.error ? { error: r.error.message } : (r.data && r.data.error ? { error: r.data.error } : r.data);
+      if (st.tab === 'analytics') main.innerHTML = tabHtml();
+    }
+    function analyticsHtml() {
+      const a = st.an, t = cairoToday(), rg = analyticsRange();
+      const opts = [['today', 'Today'], ['yesterday', 'Yesterday'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['90', 'Last 90 days'], ['month', 'This month'], ['lastmonth', 'Last month'], ['custom', 'Custom range']];
+      const bar = '<div class="sa-bar"><select id="saAnP">' + opts.map(o => '<option value="' + o[0] + '"' + (st.anP === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select>' +
+        (st.anP === 'custom' ? '<input type="date" id="saAnF" value="' + E(rg[0]) + '" max="' + t + '"><span class="sa-s">→</span><input type="date" id="saAnT" value="' + E(rg[1]) + '" max="' + t + '">' : '<span class="sa-s">' + E(rg[0]) + (rg[0] === rg[1] ? '' : ' → ' + E(rg[1])) + ' · Cairo time</span>') +
+        '<button class="sa-btn" data-act="an-refresh">Refresh</button></div>';
+      if (!a || a.loading) return bar + '<p class="sa-note">Loading…</p>';
+      if (a.error) return bar + '<div class="sa-msg err">Could not load analytics: ' + E(a.error) + '</div><div class="sa-note">Run <b>sql/12_store_analytics.sql</b> in Supabase, then publish the website so it includes events.js. Numbers start from the day the new script goes live.</div>';
+      const T = a.totals || {}, P = a.prev || {}, days = a.days || [], F = a.funnel || {}, hrs = a.hours || [], srcs = a.sources || [], C = a.carts || {}, bs = C.by_status || {};
+      const dl = (c, p) => { c = anNum(c); p = anNum(p); if (!p) return ''; const d = Math.round((c - p) * 1000 / p) / 10; return '<div class="sa-s" style="color:' + (d >= 0 ? '#15803d' : '#b91c1c') + '">' + (d >= 0 ? '▲ ' : '▼ ') + Math.abs(d) + '% vs previous period</div>'; };
+      const aov = anNum(T.orders) ? anNum(T.revenue) / anNum(T.orders) : 0;
+      const kp = '<div class="sa-g3" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">' + anCard(anNf(T.visitors), 'Visitors', dl(T.visitors, P.visitors)) + anCard(anNf(T.views), 'Page views', dl(T.views, P.views)) + anCard(anNf(T.orders), 'Orders', dl(T.orders, P.orders)) + anCard(anEgp(T.revenue), 'Sales', dl(T.revenue, P.revenue)) +
+        anCard(anEgp(aov), 'Average order') + anCard(pct(T.orders, T.visitors), 'Conversion (orders ÷ visitors)') + anCard(pct(T.carters, T.visitors), 'Visitors who added to cart') + anCard(anNum(F.checkout) ? pct(Math.max(0, anNum(F.checkout) - anNum(F.order)), F.checkout) : '—', 'Left at checkout') + anCard(pct(T.returning, T.visitors), 'Returning visitors') + '</div>';
+      const hlab = h => ((h % 12) || 12) + (h < 12 ? ' AM' : ' PM');
+      const best = days.reduce((m, d) => (anNum(d.visitors) > anNum(m.visitors) ? d : m), days[0] || {}), hb = hrs.reduce((m, h) => (anNum(h.views) > anNum(m.views) ? h : m), hrs[0] || { h: 0, views: 0 });
+      const sb = srcs.slice().sort((x, y) => anNum(y.orders) - anNum(x.orders) || anNum(y.visitors) - anNum(x.visitors))[0];
+      const hl = '<div class="sa-g3">' + anCard(best && best.day ? E(best.day) : '—', 'Best day · ' + anNf(best && best.visitors) + ' visitors') + anCard(anNum(hb.views) ? hlab(anNum(hb.h)) : '—', 'Busiest hour (Cairo) · ' + anNf(hb.views) + ' views') + anCard(sb ? E(sb.source) : '—', 'Top source · ' + anNf(sb && sb.orders) + ' orders') + '</div>';
+      const fs = [['Visited the site', F.visitors], ['Viewed a product', F.product], ['Added to cart', F.cart], ['Reached checkout', F.checkout], ['Placed an order', F.order]], fm = Math.max(1, anNum(F.visitors));
+      const fn = '<table class="sa-tbl"><tr><th>Step</th><th>Visitors</th><th>Of all visitors</th><th></th></tr>' + fs.map(s => '<tr><td>' + s[0] + '</td><td>' + anNf(s[1]) + '</td><td>' + pct(s[1], F.visitors) + '</td><td style="width:35%"><div style="height:8px;background:var(--panel-2);border-radius:4px"><div style="height:8px;width:' + Math.min(100, Math.round(anNum(s[1]) * 100 / fm)) + '%;background:#15803d;border-radius:4px"></div></div></td></tr>').join('') + '</table>';
+      const mxv = Math.max(1, ...days.map(d => anNum(d.visitors)));
+      const chart = '<div style="display:flex;align-items:flex-end;gap:2px;height:90px;margin:6px 0 4px">' + days.map(d => '<div title="' + E(d.day) + ' · ' + d.visitors + ' visitors · ' + d.orders + ' orders" style="flex:1;min-width:2px;background:' + (anNum(d.orders) ? '#15803d' : '#93c5fd') + ';height:' + Math.max(3, Math.round(anNum(d.visitors) * 100 / mxv)) + '%;border-radius:2px 2px 0 0"></div>').join('') + '</div><div class="sa-s" style="margin-bottom:8px">Each bar is a day: blue = visitors, green = a day with orders. Hover (or long-press) for details.</div>';
+      const dt = '<div style="max-height:340px;overflow:auto"><table class="sa-tbl"><tr><th>Day</th><th>Visitors</th><th>Views</th><th>Carts</th><th>Checkouts</th><th>Orders</th><th>Sales</th><th>Conv.</th></tr>' + days.slice().reverse().map(d => '<tr><td>' + E(d.day) + '</td><td>' + d.visitors + '</td><td>' + d.views + '</td><td>' + d.carts + '</td><td>' + d.checkouts + '</td><td>' + d.orders + '</td><td>' + anNf(d.revenue) + '</td><td>' + pct(d.orders, d.visitors) + '</td></tr>').join('') + '</table></div>';
+      const tbl = (head, rows) => '<table class="sa-tbl"><tr>' + head.map(h => '<th>' + h + '</th>').join('') + '</tr>' + (rows.length ? rows.join('') : '<tr><td colspan="' + head.length + '" class="sa-s">—</td></tr>') + '</table>';
+      const tr = cells => '<tr>' + cells.map(c => '<td>' + c + '</td>').join('') + '</tr>';
+      const LN = { ar: 'Arabic', en: 'English' }, DN = { mobile: 'Phone', desktop: 'Computer' };
+      const mxh = Math.max(1, ...hrs.map(h => anNum(h.views)));
+      const hbars = '<div style="display:flex;align-items:flex-end;gap:3px;height:80px">' + hrs.map(h => '<div title="' + hlab(anNum(h.h)) + ' · ' + h.views + ' views · ' + h.orders + ' orders" style="flex:1;background:' + (anNum(h.orders) ? '#15803d' : '#93c5fd') + ';height:' + Math.max(3, Math.round(anNum(h.views) * 100 / mxh)) + '%;border-radius:2px 2px 0 0"></div>').join('') + '</div><div style="display:flex;gap:3px">' + hrs.map(h => '<div class="sa-s" style="flex:1;text-align:center;font-size:9px">' + (anNum(h.h) % 3 === 0 ? anNum(h.h) : '') + '</div>').join('') + '</div>';
+      const cartsS = '<div class="sa-g3">' + anCard(anNf(C.started), 'Carts that left a phone number') + anCard(anNf(C.contacted), 'Contacted by you') + anCard(pct(C.contacted, C.started), 'Contacted rate') + '</div>' + (Object.keys(bs).length ? '<div class="sa-note">By status: ' + Object.keys(bs).map(k => E(k) + ' ' + bs[k]).join(' · ') + '</div>' : '');
+      const sec = (title, inner) => '<div class="sa-sec">' + title + '</div>' + inner;
+      return bar + kp + sec('Highlights', hl) + sec('Visitors per day', chart + dt) + sec('Shopping funnel', fn) +
+        '<div class="sa-g2"><div>' + sec('Most viewed products', tbl(['Product', 'Views', 'Visitors'], (a.top_products || []).map(r => tr([E(anProdName(r.slug)), anNf(r.views), anNf(r.visitors)])))) + '</div><div>' + sec('Most viewed pages', tbl(['Page', 'Views', 'Visitors'], (a.top_pages || []).map(r => tr([E(anPage(r.path)), anNf(r.views), anNf(r.visitors)])))) + '</div>' +
+        '<div>' + sec('Most added to cart', tbl(['Product', 'Times added'], (a.top_added || []).map(r => tr([E(anItemName(r)), anNf(r.qty)])))) + '</div><div>' + sec('Best sellers', tbl(['Product', 'Sold', 'Sales'], (a.top_sold || []).map(r => tr([E(anItemName(r)), anNf(r.qty), anEgp(r.revenue)])))) + '</div></div>' +
+        sec('Where visitors come from', tbl(['Source', 'Visitors', 'Orders', 'Sales', 'Conv.'], srcs.map(r => tr([E(r.source), anNf(r.visitors), anNf(r.orders), anEgp(r.revenue), pct(r.orders, r.visitors)])))) +
+        '<div class="sa-g2"><div>' + sec('Devices', tbl(['Device', 'Visitors', 'Share'], (a.devices || []).map(r => tr([E(DN[r.device] || r.device), anNf(r.visitors), pct(r.visitors, T.visitors)])))) + '</div><div>' + sec('Language', tbl(['Language', 'Visitors', 'Share'], (a.langs || []).map(r => tr([E(LN[r.lang] || r.lang), anNf(r.visitors), pct(r.visitors, T.visitors)])))) + '</div></div>' +
+        sec('Busiest hours (Cairo time, 0–23)', hbars) + sec('What visitors search for', tbl(['Search words', 'Times'], (a.terms || []).map(r => tr([E(r.term), anNf(r.n)])))) + sec('Abandoned carts in this period', cartsS) +
+        '<div class="sa-note" style="margin-top:12px">Counted anonymously from the website (no cookies, no IP, no names). Orders here are the ones that reached the thank-you page, so they can differ a little from your order list. Visits from devices opened once with <b>?notrack=1</b> are not counted. Numbers start from the day the new tracking script went live.</div>';
+    }
 
     // ============ abandoned carts ============
     async function loadCarts() {
@@ -9446,8 +9559,8 @@ ${invoiceFootHtml('')}`;
             '<div style="margin-top:4px">' + (fresh ? '<span class="sa-pill warn">May still be ordering</span>' : '') + (c.contacted_at ? '<span class="sa-pill ok">Contacted ' + E(ago(c.contacted_at)) + '</span>' : '') + '</div></div>' +
             '<div class="sa-act" style="flex-wrap:wrap;justify-content:flex-end"><a class="sa-btn pri" target="_blank" rel="noopener" data-wa="' + E(c.cart_id) + '" href="https://wa.me/' + String(c.phone).replace(/\D/g, '') + '?text=' + encodeURIComponent(waText(c)) + '">WhatsApp</a><button class="sa-btn" data-copy="' + E(cartLink(c)) + '">Copy link</button>' + (c.contacted_at ? '' : '<button class="sa-btn" data-cdone="' + E(c.cart_id) + '">Mark contacted</button>') + '<button class="sa-btn dan" data-cdel="' + E(c.cart_id) + '">Dismiss</button></div></div>'; }).join('') : '<p class="sa-note">Nothing here.</p>');
     }
-    async function cartUpdate(id, patch) { const r = await SB().from('store_carts').update(patch).eq('cart_id', id); if (r.error) { toast(r.error.message); return false; } const c = st.carts.find(x => x.cart_id === id); if (c) Object.assign(c, patch); if (patch.dismissed) { st.carts = st.carts.filter(x => x.cart_id !== id); if (st.ov && st.ov.abandoned) st.ov.abandoned--; } main.innerHTML = tabHtml(); return true; }
-    async function enterTab() { if (st.tab === 'overview') { await loadOverview(); startOverview(); } else if (st.tab === 'carts') { await loadCarts(); if (st.tab === 'carts') main.innerHTML = tabHtml(); } else if (st.tab === 'locations') { await window.loadGeoFromDb(); if (st.tab === 'locations') main.innerHTML = tabHtml(); } }
+    async function cartUpdate(id, patch) { const c0 = st.carts.find(x => x.cart_id === id), wasNew = !!c0 && !c0.contacted_at; const r = await SB().from('store_carts').update(patch).eq('cart_id', id); if (r.error) { toast(r.error.message); return false; } const c = st.carts.find(x => x.cart_id === id); if (c) Object.assign(c, patch); if (patch.dismissed) { st.carts = st.carts.filter(x => x.cart_id !== id); if (st.ov && st.ov.abandoned) st.ov.abandoned--; } if (wasNew && (patch.contacted_at || patch.dismissed)) st.pending = Math.max(0, st.pending - 1); syncCartBadge(); main.innerHTML = tabHtml(); return true; }
+    async function enterTab() { if (st.tab !== 'overview') loadPending().then(syncCartBadge); if (st.tab === 'analytics') { await loadAnalytics(); return; } if (st.tab === 'overview') { await loadOverview(); startOverview(); } else if (st.tab === 'carts') { await loadCarts(); if (st.tab === 'carts') main.innerHTML = tabHtml(); } else if (st.tab === 'locations') { await window.loadGeoFromDb(); if (st.tab === 'locations') main.innerHTML = tabHtml(); } }
 
 
     // ============ marketing: ad pixels, search engines, AI visibility ============
@@ -9584,7 +9697,8 @@ ${invoiceFootHtml('')}`;
       if (open && !act) { openEditor(open.dataset.open); return; }
       if (!act) return;
       const a = act.dataset.act;
-      if (a === 'close') root.hidden = true;
+      if (a === 'an-refresh') { st.ovxAt = 0; loadAnalytics(); }
+      else if (a === 'close') root.hidden = true;
       else if (a === 'ship') window.openShipZones();
       else if (a === 'new') openEditor('__new__');
       else if (a === 'newcol') openCollection('');
@@ -9668,6 +9782,8 @@ ${invoiceFootHtml('')}`;
     root.addEventListener('change', async e => {
       const t = e.target;
       if (t.id === 'saImport') { const f = t.files[0]; t.value = ''; if (f) importFile(f); return; }
+      if (t.id === 'saAnP') { const r0 = analyticsRange(); st.anP = t.value; if (t.value === 'custom') { st.anFrom = r0[0]; st.anTo = r0[1]; } loadAnalytics(); return; }
+      if (t.id === 'saAnF' || t.id === 'saAnT') { st.anFrom = $('saAnF').value; st.anTo = $('saAnT').value; if (st.anFrom && st.anTo) loadAnalytics(); return; }
       if (t.id === 'saCF') { st.cartFilter = t.value; main.innerHTML = tabHtml(); return; }
       if (t.id === 'saF') { st.filter = t.value; $('saList').innerHTML = listHtml(); return; }
       if (t.id === 'saSite') { st.site = +t.value; st.feed = null; render(); return; }
