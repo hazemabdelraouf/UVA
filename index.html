@@ -8844,6 +8844,38 @@ ${invoiceFootHtml('')}`;
       renderModal();
     }
     const siteUrl = () => SITES[st.site][1];
+    // ---- "Generate with AI" in the product editor: from the title to description (with specifications table), SEO title and meta description ----
+    function aiGenBox() {
+      const ed = st.ed;
+      return '<div class="sa-card" style="max-width:none;box-shadow:none;border:1px dashed var(--line);margin:0 0 12px;padding:12px 14px">' +
+        '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b>\u2728 Fill the rest with AI</b><span class="sa-s" style="flex:1;min-width:220px">Write the title (Arabic or English), then press the button. It writes the other title, a structured description with a specifications table, the SEO titles and the meta descriptions, aimed at shoppers who search to buy.</span>' +
+        '<button type="button" class="sa-btn pri" id="saAiGen" data-act="ai-gen"' + (ed.aiBusy ? ' disabled' : '') + '>' + (ed.aiBusy ? 'Writing\u2026' : '\u2728 Generate with AI') + '</button></div>' +
+        '<details style="margin-top:8px"' + (ed.aiFacts ? ' open' : '') + '><summary class="sa-s" style="cursor:pointer">Facts you know about the product (optional, makes the text more accurate)</summary>' +
+        '<textarea id="saAiFacts" rows="3" dir="auto" placeholder="e.g. 100% Arabica, Brazil, medium roast, chocolate and nuts notes, ground for Turkish coffee, 250 g pack" style="width:100%;margin-top:6px">' + E(ed.aiFacts || '') + '</textarea></details>' +
+        '<label style="display:flex;gap:6px;align-items:center;margin-top:8px"><input type="checkbox" id="saAiOver"' + (ed.aiOver ? ' checked' : '') + '> <span class="sa-s">Also replace fields that already have text (otherwise only empty fields are filled)</span></label>' +
+        '<div id="saAiMsg" class="sa-s" style="margin-top:6px;white-space:pre-line">' + E(ed.aiMsg || '') + '</div></div>';
+    }
+    async function aiGenProduct() {
+      const ed = st.ed; if (!ed || ed.aiBusy) return;
+      const sh = ed.shared, say = t => { ed.aiMsg = t; const m = $('saAiMsg'); if (m) m.textContent = t; };
+      ed.aiFacts = ($('saAiFacts') || {}).value || ''; ed.aiOver = !!($('saAiOver') || {}).checked;
+      if (!String(sh.title_arabic || '').trim() && !String(sh.title || '').trim()) { say('Write the title first (Arabic or English), then press the button.'); return; }
+      ed.aiBusy = true; const btn = $('saAiGen'); if (btn) { btn.disabled = true; btn.textContent = 'Writing\u2026'; } say('Writing the page\u2026 this takes about 20 seconds.');
+      const names = (ed.cols || []).map(k => { const c = st.cols.find(x => x.match_name === k); return c ? { ar: c.title || '', en: c.title_en || '' } : { ar: k, en: '' }; });
+      try {
+        const r = await fetch(SITES[0][1] + '/api/ai-product', { method: 'POST', headers: { authorization: 'Bearer ' + await accessToken(), 'content-type': 'application/json' }, body: JSON.stringify({
+          title_arabic: sh.title_arabic, title: sh.title, facts: ed.aiFacts, option1_name: sh.option1_name, option2_name: sh.option2_name,
+          variants: (ed.variants || []).map(v => ({ o1: v.option1_value, o2: v.option2_value, weight: v.weight })), collections: names, description_ar: sh.description_ar, description: sh.description }) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.ok) { ed.aiBusy = false; renderModal(); say(j.error === 'unauthorized' ? 'Please sign in again and retry.' : 'The AI could not write the page: ' + (j.detail || j.error || ('error ' + r.status))); return; }
+        let filled = 0;
+        Object.keys(j.fields || {}).forEach(k => { if (!(k in sh)) return; if (ed.aiOver || !String(sh[k] || '').trim()) { sh[k] = j.fields[k]; filled++; } });
+        const parts = [filled ? 'Done: ' + filled + ' field' + (filled === 1 ? '' : 's') + ' filled. Read the texts, edit anything you like, then press Save.' : 'Nothing to fill: every field already has text. Tick \u201cAlso replace fields that already have text\u201d to rewrite them.'];
+        if ((j.checks || []).length) parts.push('Check before publishing: ' + j.checks.join(' '));
+        if ((j.keywords || []).length) parts.push('Searches this page is written for: ' + j.keywords.join(' \u00b7 '));
+        ed.aiBusy = false; ed.aiMsg = parts.join('\n'); renderModal();
+      } catch (e) { ed.aiBusy = false; renderModal(); say('The AI could not be reached. Check your connection and try again.'); }
+    }
     function editorHtml() {
       const ed = st.ed, sh = ed.shared, dirOf = k => (/_ar$|^title_arabic$/.test(k) ? 'rtl' : /^(title|description|seo_title|seo_description)$/.test(k) ? 'ltr' : 'auto');
       const f = (k, max) => '<input data-f="' + k + '" value="' + E(sh[k]) + '" dir="' + dirOf(k) + '"' + (max ? ' data-max="' + max + '"' : '') + '>';
@@ -8852,7 +8884,7 @@ ${invoiceFootHtml('')}`;
       const slug = slugify(sh.url_slug || ed.handle || sh.title), url = siteUrl() + '/ar/products/' + encodeURIComponent(slug) + '/';
       return '<div class="sa-mod"><div class="sa-card"><h3>' + (ed.isNew ? 'New product' : 'Edit product') + '</h3>' +
         '<label>Website status</label><select data-f="status"><option value="ACTIVE"' + (sh.status === 'ACTIVE' ? ' selected' : '') + '>Visible</option><option value="UNLISTED"' + (sh.status !== 'ACTIVE' ? ' selected' : '') + '>Hidden</option></select>' +
-        '<div class="sa-sec">Title and description</div><div class="sa-g2"><div>' + cnt('Title (Arabic)', f('title_arabic')) + '</div><div>' + cnt('Title (English)', f('title')) + '</div>' +
+        '<div class="sa-sec">Title and description</div>' + aiGenBox() + '<div class="sa-g2"><div>' + cnt('Title (Arabic)', f('title_arabic')) + '</div><div>' + cnt('Title (English)', f('title')) + '</div>' +
         '<div>' + cnt('Description (Arabic)', ta('description_ar')) + '</div><div>' + cnt('Description (English)', ta('description')) + '</div></div>' +
         '<div class="sa-sec">Search engine (SEO) — Google shows about 60 characters of the title and 160 of the description</div><div class="sa-g2">' +
         '<div>' + cnt('SEO title (Arabic)', f('seo_title_ar', 60), 1) + '</div><div>' + cnt('SEO title (English)', f('seo_title', 60), 1) + '</div>' +
@@ -9814,6 +9846,7 @@ ${invoiceFootHtml('')}`;
         const base = String((st.ed.variants[0] || {}).sku || '').trim(); let n = st.ed.variants.length + 1, sku = '';
         if (base) { do { sku = base + '-' + n++; } while (used.has(sku.toLowerCase())); }                  // suggested SKU, free to change
         st.ed.variants.push({ id: '', sku, option1_value: '', option2_value: '', sale_price: '', regular_price: '', store_stock_mode: 'auto', variant_image: '', weight: '', balance: 0 }); renderModal(); }
+      else if (a === 'ai-gen') await aiGenProduct();
       else if (a === 'pick') $('saFile').click();
       else if (a === 'addurl') { const u = $('saUrl').value.trim(); if (/^https?:\/\//i.test(u)) { st.ed.images.push(u); renderModal(); } }
       else if (a === 'copylink') { try { await navigator.clipboard.writeText(act.dataset.url); toast('Link copied'); } catch (x) { toast('Copy failed'); } }
