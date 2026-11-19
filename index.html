@@ -8352,7 +8352,7 @@ ${invoiceFootHtml('')}`;
     };
     const slugify = t => enSlug(t);          // every web address uses English letters (Arabic is transliterated)
     const imgs = txt => String(txt || '').split(/\s+/).filter(u => /^https?:\/\//i.test(u));
-    const st = { mk: null, seoOpen: '', utm: { page: '/ar/', custom: '', source: 'facebook', medium: 'paid_social', campaign: '', content: '', term: '' }, ov: null, pending: 0, an: null, anP: '7', anFrom: '', anTo: '', ovx: null, ovxAt: 0, carts: [], cartFilter: 'new', imp: null, tab: 'overview', gl: { gov: '', q: '', miss: false, draft: {}, msg: null }, products: [], cols: [], discounts: [], events: [], q: '', filter: 'all', cq: '', ed: null, dd: null, cd: null, app: null, feed: null, site: 0, pubState: 'ok', pubText: 'Website is up to date' };
+    const st = { mk: null, seoOpen: '', utm: { page: '/ar/', custom: '', source: 'facebook', medium: 'paid_social', campaign: '', content: '', term: '' }, ov: null, pending: 0, ai: null, an: null, anP: '7', anFrom: '', anTo: '', ovx: null, ovxAt: 0, carts: [], cartFilter: 'new', imp: null, tab: 'overview', gl: { gov: '', q: '', miss: false, draft: {}, msg: null }, products: [], cols: [], discounts: [], events: [], q: '', filter: 'all', cq: '', ed: null, dd: null, cd: null, app: null, feed: null, site: 0, pubState: 'ok', pubText: 'Website is up to date' };
 
     const css = document.createElement('style');
     css.textContent = `
@@ -8785,9 +8785,9 @@ ${invoiceFootHtml('')}`;
     }
 
     // ============ render ============
-    const TABS = [['overview', 'Overview'], ['analytics', 'Analytics'], ['products', 'Products'], ['collections', 'Collections'], ['discounts', 'Discounts'], ['carts', 'Abandoned carts'], ['locations', 'Locations'], ['appearance', 'Appearance'], ['marketing', 'Marketing'], ['integrations', 'Integrations']];
+    const TABS = [['overview', 'Overview'], ['analytics', 'Analytics'], ['aiseo', 'AI SEO'], ['products', 'Products'], ['collections', 'Collections'], ['discounts', 'Discounts'], ['carts', 'Abandoned carts'], ['locations', 'Locations'], ['appearance', 'Appearance'], ['marketing', 'Marketing'], ['integrations', 'Integrations']];
     const tabLabel = t => t[1] + (t[0] === 'carts' && st.pending ? ' (' + st.pending + ')' : '');
-    const tabHtml = () => ({ overview: overviewHtml, analytics: analyticsHtml, products: productsHtml, collections: collectionsHtml, discounts: discountsHtml, carts: cartsHtml, locations: locationsHtml, appearance: appearanceHtml, marketing: marketingHtml, integrations: integrationsHtml })[st.tab]();
+    const tabHtml = () => ({ overview: overviewHtml, analytics: analyticsHtml, aiseo: aiHtml, products: productsHtml, collections: collectionsHtml, discounts: discountsHtml, carts: cartsHtml, locations: locationsHtml, appearance: appearanceHtml, marketing: marketingHtml, integrations: integrationsHtml })[st.tab]();
     function render() {
       const prevTabs = top.querySelector('.sa-tabs'), prevLeft = prevTabs ? prevTabs.scrollLeft : 0;
       top.innerHTML = '<div class="sa-hd"><b>Store admin</b><div class="sa-tabs">' + TABS.map(t => '<button data-tab="' + t[0] + '" class="' + (st.tab === t[0] ? 'on' : '') + '">' + tabLabel(t) + '</button>').join('') +
@@ -9548,14 +9548,101 @@ ${invoiceFootHtml('')}`;
       const hbars = '<div style="display:flex;align-items:flex-end;gap:3px;height:80px">' + hrs.map(h => '<div title="' + hlab(anNum(h.h)) + ' · ' + h.views + ' views · ' + h.orders + ' orders" style="flex:1;background:' + (anNum(h.orders) ? '#15803d' : '#93c5fd') + ';height:' + Math.max(3, Math.round(anNum(h.views) * 100 / mxh)) + '%;border-radius:2px 2px 0 0"></div>').join('') + '</div><div style="display:flex;gap:3px">' + hrs.map(h => '<div class="sa-s" style="flex:1;text-align:center;font-size:9px">' + (anNum(h.h) % 3 === 0 ? anNum(h.h) : '') + '</div>').join('') + '</div>';
       const cartsS = '<div class="sa-g3">' + anCard(anNf(C.started), 'Carts that left a phone number') + anCard(anNf(C.contacted), 'Contacted by you') + anCard(pct(C.contacted, C.started), 'Contacted rate') + '</div>' + (Object.keys(bs).length ? '<div class="sa-note">By status: ' + Object.keys(bs).map(k => E(k) + ' ' + bs[k]).join(' · ') + '</div>' : '');
       const sec = (title, inner) => '<div class="sa-sec">' + title + '</div>' + inner;
-      return bar + kp + sec('Highlights', hl) + sec('Visitors per day', chart + dt) + sec('Shopping funnel', fn) +
+      return bar + kp + sec('Highlights', hl) + sec('Traffic quality — are the visitors real?', anQualityHtml(a)) + sec('Visitors per day', chart + dt) + sec('Shopping funnel', fn) +
         '<div class="sa-g2"><div>' + sec('Most viewed products', tbl(['Product', 'Views', 'Visitors'], (a.top_products || []).map(r => tr([E(anProdName(r.slug)), anNf(r.views), anNf(r.visitors)])))) + '</div><div>' + sec('Most viewed pages', tbl(['Page', 'Views', 'Visitors'], (a.top_pages || []).map(r => tr([E(anPage(r.path)), anNf(r.views), anNf(r.visitors)])))) + '</div>' +
         '<div>' + sec('Most added to cart', tbl(['Product', 'Times added'], (a.top_added || []).map(r => tr([E(anItemName(r)), anNf(r.qty)])))) + '</div><div>' + sec('Best sellers', tbl(['Product', 'Sold', 'Sales'], (a.top_sold || []).map(r => tr([E(anItemName(r)), anNf(r.qty), anEgp(r.revenue)])))) + '</div></div>' +
-        sec('Where visitors come from', tbl(['Source', 'Visitors', 'Orders', 'Sales', 'Conv.'], srcs.map(r => tr([E(r.source), anNf(r.visitors), anNf(r.orders), anEgp(r.revenue), pct(r.orders, r.visitors)])))) +
+        sec('Where visitors come from', tbl(['Source', 'Visitors', 'Did something', 'Orders', 'Sales', 'Conv.'], srcs.map(r => tr([E(r.source), anNf(r.visitors), pct(r.engaged, r.visitors), anNf(r.orders), anEgp(r.revenue), pct(r.orders, r.visitors)])))) +
         sec('Ads and campaigns', '<div style="overflow:auto">' + tbl(['Source', 'Medium', 'Campaign', 'Ad', 'Visitors', 'Added to cart', 'Orders', 'Sales', 'Conv.'], (a.campaigns || []).map(r => tr([E(r.source), E(r.medium || '—'), E(r.campaign || '—'), E(r.content || '—'), anNf(r.visitors), anNf(r.carters), anNf(r.orders), anEgp(r.revenue), pct(r.orders, r.visitors)]))) + '</div><div class="sa-note">Pick “Today” above to see today only. Visitors from an ad link with utm tags (build them in Marketing → Campaign links) are listed with the campaign and ad name.</div>') +
         '<div class="sa-g2"><div>' + sec('Devices', tbl(['Device', 'Visitors', 'Share'], (a.devices || []).map(r => tr([E(DN[r.device] || r.device), anNf(r.visitors), pct(r.visitors, T.visitors)])))) + '</div><div>' + sec('Language', tbl(['Language', 'Visitors', 'Share'], (a.langs || []).map(r => tr([E(LN[r.lang] || r.lang), anNf(r.visitors), pct(r.visitors, T.visitors)])))) + '</div></div>' +
         sec('Busiest hours (Cairo time, 0–23)', hbars) + sec('What visitors search for', tbl(['Search words', 'Times'], (a.terms || []).map(r => tr([E(r.term), anNf(r.n)])))) + sec('Abandoned carts in this period', cartsS) +
         '<div class="sa-note" style="margin-top:12px">Counted anonymously from the website (no cookies, no IP, no names). Orders here are the ones that reached the thank-you page, so they can differ a little from your order list. Visits from devices opened once with <b>?notrack=1</b> are not counted. Numbers start from the day the new tracking script went live.</div>';
+    }
+
+
+    // ============ traffic quality (are the visitors real?) ============
+    function anQualityHtml(a) {
+      const Q = a.quality || {}, srcs = a.sources || [], cts = a.countries || [], vis = anNum(Q.visitors), eng = anNum(Q.engaged);
+      const tr = cells => '<tr>' + cells.map(c => '<td>' + c + '</td>').join('') + '</tr>';
+      const tbl = (head, rows) => '<table class="sa-tbl"><tr>' + head.map(h => '<th>' + h + '</th>').join('') + '</tr>' + (rows.length ? rows.join('') : '<tr><td colspan="' + head.length + '" class="sa-s">—</td></tr>') + '</table>';
+      const cards = '<div class="sa-g3" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">' + anCard(pct(eng, vis), 'Visitors who did something (scroll, tap, type)') + anCard(pct(Q.bounced, vis), 'Landed and left without doing anything') +
+        anCard(anNum(Q.avg_seconds) ? anNum(Q.avg_seconds) + ' s' : '—', 'Average time with the page open') + anCard(anNf(Q.bots), 'Robots filtered out (not counted anywhere)') + '</div>';
+      const low = srcs.filter(r => anNum(r.visitors) >= 30 && anNum(r.engaged) * 100 / anNum(r.visitors) < 15).map(r => E(r.source));
+      const warn = low.length ? '<div class="sa-msg err">Very little interaction from: ' + low.join(', ') + '. These visitors almost never scroll, tap or type — most likely robots, accidental ad clicks or links that open by themselves.</div>' : '';
+      return cards + warn + '<div class="sa-g2"><div>' + tbl(['Source', 'Visitors', 'Did something', 'Orders'], srcs.map(r => tr([E(r.source), anNf(r.visitors), pct(r.engaged, r.visitors), anNf(r.orders)]))) + '</div><div>' +
+        tbl(['Country', 'Visitors', 'Did something', 'Orders'], cts.map(r => tr([E(r.country), anNf(r.visitors), pct(r.engaged, r.visitors), anNf(r.orders)]))) + '</div></div>' +
+        '<div class="sa-note">“Did something” = the person scrolled, tapped, moved the mouse or typed at least once. Real shoppers almost always do; robots and mis-clicks usually do not. Visits from Facebook, Instagram and TikTok apps are listed under their own name instead of “direct”.</div>';
+    }
+
+    // ============ AI SEO: a daily review writes suggestions, you press Apply ============
+    const aiAgo = ts => { const m = Math.round((Date.now() - Date.parse(ts)) / 60000); return m < 2 ? 'just now' : m < 90 ? m + ' min ago' : m < 2880 ? Math.round(m / 60) + ' hours ago' : Math.round(m / 1440) + ' days ago'; };
+    const aiLabel = (kind, f) => {
+      const base = { title: 'Name', description: 'Description', seo_title: 'SEO title', seo_description: 'Meta description' };
+      const m = /^(title|description|seo_title|seo_description)(_ar|_arabic|_en)?$/.exec(f); if (!m) return f;
+      const lang = m[2] === '_ar' || m[2] === '_arabic' ? 'Arabic' : m[2] === '_en' ? 'English' : (kind === 'collection' ? 'Arabic' : 'English');   // collections keep Arabic in the plain columns
+      return base[m[1]] + ' (' + lang + ')';
+    };
+    async function loadAi() {
+      const keep = st.ai ? { msg: st.ai.msg, err: st.ai.err } : {};
+      st.ai = { loading: true }; if (st.tab === 'aiseo') main.innerHTML = tabHtml();
+      const [run, sug, app] = await Promise.all([
+        SB().from('store_ai_runs').select('*').order('created_at', { ascending: false }).limit(1),
+        SB().from('store_ai_suggestions').select('*').eq('status', 'new').order('priority', { ascending: true }).limit(60),
+        SB().from('store_ai_suggestions').select('id', { count: 'exact', head: true }).eq('status', 'applied')]);
+      st.ai = (run.error || sug.error) ? { error: (run.error || sug.error).message } : { run: (run.data || [])[0] || null, sugg: sug.data || [], applied: app.count || 0, msg: keep.msg || '', err: !!keep.err };
+      if (st.tab === 'aiseo') main.innerHTML = tabHtml();
+    }
+    function aiSay(msg, bad) { if (!st.ai) return; st.ai.msg = msg; st.ai.err = !!bad; if (st.tab === 'aiseo') main.innerHTML = tabHtml(); }
+    async function aiRun() {
+      if (!st.ai || st.ai.running) return;
+      st.ai.running = true; st.ai.msg = ''; main.innerHTML = tabHtml();
+      let msg = '', bad = false;
+      try {
+        const r = await fetch(SITES[0][1] + '/api/ai-seo', { method: 'POST', headers: { authorization: 'Bearer ' + await accessToken() } });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.ok) { bad = true; msg = j.error === 'too_soon' ? 'It ran a moment ago. Try again in ' + j.wait_minutes + ' minute(s).' : 'The review could not run: ' + (j.detail || j.error || ('error ' + r.status)); }
+        else msg = 'Done: ' + j.reviewed + ' pages reviewed, ' + j.suggestions + ' suggestion' + (j.suggestions === 1 ? '' : 's') + (j.failed ? ', ' + j.failed + ' could not be reviewed' : '') + '.';
+      } catch (e) { bad = true; msg = 'The review could not run (the website function did not answer).'; }
+      st.ai = { msg, err: bad }; await loadAi(); aiSay(msg, bad);
+    }
+    async function aiApply(id, quiet) {
+      const s = ((st.ai && st.ai.sugg) || []).find(x => x.id === id); if (!s) return true;
+      const patch = {};
+      Object.keys(s.changes || {}).forEach(f => { const el = main.querySelector('[data-aiedit="' + id + '|' + f + '"]'), v = String(el ? el.value : (s.changes[f] || {}).to || '').trim(); if (v) patch[f] = v; });
+      if (!Object.keys(patch).length) return true;
+      let r;
+      if (s.kind === 'product') {
+        r = await SB().from('products').update(patch).eq('handle', s.target_key).select('sku');
+        const skus = (s.meta && s.meta.skus) || []; if (!r.error && !(r.data || []).length && skus.length) r = await SB().from('products').update(patch).in('sku', skus).select('sku');
+      } else r = await SB().from('store_collections').update(patch).eq('id', s.target_key).select('id');
+      if (r.error || !(r.data || []).length) { aiSay('Could not apply “' + s.target_label + '”: ' + (r.error ? r.error.message : 'the page was not found (it may have been renamed or deleted)'), true); return false; }
+      await SB().from('store_ai_suggestions').update({ status: 'applied', applied_at: new Date().toISOString() }).eq('id', id);
+      st.ai.sugg = st.ai.sugg.filter(x => x.id !== id); st.ai.applied = (st.ai.applied || 0) + 1;
+      queuePublish(); if (!quiet) aiSay('Applied to “' + s.target_label + '”. The website updates in a moment.', false);
+      return true;
+    }
+    async function aiApplyAll() {
+      const ids = ((st.ai && st.ai.sugg) || []).map(s => s.id); if (!ids.length || !confirm('Apply all ' + ids.length + ' suggestions as written? (Any text you edited below is used.)')) return;
+      let ok = 0; for (const id of ids) { if (await aiApply(id, true)) ok++; else break; }
+      aiSay(ok + ' suggestion' + (ok === 1 ? '' : 's') + ' applied. The website updates in a moment.', false);
+    }
+    async function aiDismiss(id) { await SB().from('store_ai_suggestions').update({ status: 'dismissed' }).eq('id', id); st.ai.sugg = (st.ai.sugg || []).filter(x => x.id !== id); main.innerHTML = tabHtml(); }
+    function aiHtml() {
+      const a = st.ai;
+      if (!a || a.loading) return '<p class="sa-note">Loading…</p>';
+      if (a.error) return '<div class="sa-msg err">' + E(a.error) + '</div><div class="sa-note">Run <b>sql/13_store_ai_seo.sql</b> in Supabase first.</div>';
+      const run = a.run, sugg = a.sugg || [], cut = (t, n) => { t = String(t || ''); return t.length > n ? t.slice(0, n) + '…' : t; };
+      let h = '<div class="sa-bar"><button class="sa-btn pri" data-act="ai-run"' + (a.running ? ' disabled' : '') + '>' + (a.running ? 'Reviewing… this takes up to a minute' : 'Run the review now') + '</button>' +
+        (sugg.length > 1 ? '<button class="sa-btn" data-act="ai-applyall">Apply all (' + sugg.length + ')</button>' : '') + '<span class="sa-s">' + (run ? 'Last review ' + aiAgo(run.created_at) : 'No review yet') + '</span></div>';
+      if (a.msg) h += '<div class="sa-msg ' + (a.err ? 'err' : 'ok') + '">' + E(a.msg) + '</div>';
+      if (run && (run.summary || (run.insights || []).length)) h += '<div class="sa-sec">Latest review</div>' + (run.summary ? '<p style="margin:6px 0;line-height:1.6">' + E(run.summary) + '</p>' : '') + ((run.insights || []).length ? '<ul style="margin:6px 20px;line-height:1.7">' + run.insights.map(x => '<li>' + E(x) + '</li>').join('') + '</ul>' : '');
+      h += '<div class="sa-sec">Suggestions waiting for you (' + sugg.length + ')</div>';
+      if (!sugg.length) h += '<p class="sa-note">Nothing waiting. The review runs every day and puts its suggestions here. Nothing changes on the website until you press Apply. You can edit any text before applying it.</p>';
+      h += sugg.map(s => '<div class="sa-card" style="max-width:none;box-shadow:none;border:1px solid var(--line);margin:10px 0"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="sa-code" style="display:inline">' + (s.kind === 'product' ? 'Product' : 'Collection') + '</span><b>' + E(s.target_label) + '</b><span style="flex:1"></span>' +
+        '<button class="sa-btn pri" data-act="ai-apply" data-id="' + E(s.id) + '">Apply</button><button class="sa-btn" data-act="ai-dismiss" data-id="' + E(s.id) + '">Dismiss</button></div>' + (s.reason ? '<div class="sa-note" style="margin-bottom:6px">' + E(s.reason) + '</div>' : '') +
+        Object.keys(s.changes || {}).map(f => { const c = s.changes[f] || {}; return '<label style="display:block;margin-top:8px">' + E(aiLabel(s.kind, f)) + '</label><div class="sa-s" style="opacity:.75;margin:2px 0 4px" dir="auto">Now: ' + (c.from ? E(cut(c.from, 300)) : 'empty') + '</div>' +
+          '<textarea data-aiedit="' + E(s.id) + '|' + E(f) + '" rows="' + (/^description/.test(f) ? 6 : 2) + '" dir="auto">' + E(c.to) + '</textarea>'; }).join('') + '</div>').join('');
+      h += '<div class="sa-note" style="margin-top:12px">' + anNf(a.applied) + ' suggestion' + (a.applied === 1 ? '' : 's') + ' applied so far. The review looks at your products and collections, visitors, searches and sales of the last 30 days, and picks the pages that need attention most.</div>';
+      return h;
     }
 
     // ============ abandoned carts ============
@@ -9576,7 +9663,7 @@ ${invoiceFootHtml('')}`;
             '<div class="sa-act" style="flex-wrap:wrap;justify-content:flex-end"><a class="sa-btn pri" target="_blank" rel="noopener" data-wa="' + E(c.cart_id) + '" href="https://wa.me/' + String(c.phone).replace(/\D/g, '') + '?text=' + encodeURIComponent(waText(c)) + '">WhatsApp</a><button class="sa-btn" data-copy="' + E(cartLink(c)) + '">Copy link</button>' + (c.contacted_at ? '' : '<button class="sa-btn" data-cdone="' + E(c.cart_id) + '">Mark contacted</button>') + '<button class="sa-btn dan" data-cdel="' + E(c.cart_id) + '">Dismiss</button></div></div>'; }).join('') : '<p class="sa-note">Nothing here.</p>');
     }
     async function cartUpdate(id, patch) { const c0 = st.carts.find(x => x.cart_id === id), wasNew = !!c0 && !c0.contacted_at; const r = await SB().from('store_carts').update(patch).eq('cart_id', id); if (r.error) { toast(r.error.message); return false; } const c = st.carts.find(x => x.cart_id === id); if (c) Object.assign(c, patch); if (patch.dismissed) { st.carts = st.carts.filter(x => x.cart_id !== id); if (st.ov && st.ov.abandoned) st.ov.abandoned--; } if (wasNew && (patch.contacted_at || patch.dismissed)) st.pending = Math.max(0, st.pending - 1); syncCartBadge(); main.innerHTML = tabHtml(); return true; }
-    async function enterTab() { if (st.tab !== 'overview') loadPending().then(syncCartBadge); if (st.tab === 'analytics') { await loadAnalytics(); return; } if (st.tab === 'overview') { await loadOverview(); startOverview(); } else if (st.tab === 'carts') { await loadCarts(); if (st.tab === 'carts') main.innerHTML = tabHtml(); } else if (st.tab === 'locations') { await window.loadGeoFromDb(); if (st.tab === 'locations') main.innerHTML = tabHtml(); } }
+    async function enterTab() { if (st.tab !== 'overview') loadPending().then(syncCartBadge); if (st.tab === 'analytics') { await loadAnalytics(); return; } if (st.tab === 'aiseo') { await loadAi(); return; } if (st.tab === 'overview') { await loadOverview(); startOverview(); } else if (st.tab === 'carts') { await loadCarts(); if (st.tab === 'carts') main.innerHTML = tabHtml(); } else if (st.tab === 'locations') { await window.loadGeoFromDb(); if (st.tab === 'locations') main.innerHTML = tabHtml(); } }
 
 
     // ============ marketing: ad pixels, search engines, AI visibility ============
@@ -9714,6 +9801,10 @@ ${invoiceFootHtml('')}`;
       if (!act) return;
       const a = act.dataset.act;
       if (a === 'an-refresh') { st.ovxAt = 0; loadAnalytics(); }
+      else if (a === 'ai-run') aiRun();
+      else if (a === 'ai-apply') aiApply(act.dataset.id);
+      else if (a === 'ai-dismiss') aiDismiss(act.dataset.id);
+      else if (a === 'ai-applyall') aiApplyAll();
       else if (a === 'close') root.hidden = true;
       else if (a === 'ship') window.openShipZones();
       else if (a === 'new') openEditor('__new__');
