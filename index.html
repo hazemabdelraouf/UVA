@@ -9907,7 +9907,7 @@ ${invoiceFootHtml('')}`;
       if (t.dataset.rmimg !== undefined) { st.ed.images.splice(+t.dataset.rmimg, 1); renderModal(); return; }
       if (t.dataset.firstimg !== undefined) { const u = st.ed.images.splice(+t.dataset.firstimg, 1)[0]; st.ed.images.unshift(u); renderModal(); return; }
       if (t.dataset.vimgrm !== undefined && st.ed) { st.ed.variants[+t.dataset.vimgrm].variant_image = ''; renderModal(); return; }
-      if (t.dataset.vimg !== undefined && st.ed) { const q = t.dataset.vimg.split('|'), vv = st.ed.variants[+q[0]], u = q.slice(1).join('|'); vv.variant_image = (u && vv.variant_image === u) ? '' : u; renderModal(); return; }   // click the chosen picture again = unselect
+      if (t.dataset.vimg !== undefined && st.ed) { const q = t.dataset.vimg.split('|'), vv = st.ed.variants[+q[0]], u = q.slice(1).join('|'); if (!u || vv.variant_image === u) return; vv.variant_image = u; renderModal(); return; }   // tapping never removes a picture: only the small × or Replace does
       if (t.dataset.vup !== undefined && st.ed) { st.vupIdx = +t.dataset.vup; $('saVFile').click(); return; }
       if (t.dataset.delvar !== undefined && st.ed) { await deleteOption(+t.dataset.delvar); return; }
       if (t.dataset.rmvar !== undefined) { const rv = st.ed.variants[+t.dataset.rmvar]; if (rv && (rv.sku || rv.option1_value || rv.option2_value || rv.sale_price || rv.regular_price || rv.weight) && !confirm('Remove this option?')) return; st.ed.variants.splice(+t.dataset.rmvar, 1); renderModal(); return; }
