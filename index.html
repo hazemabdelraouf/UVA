@@ -9740,7 +9740,7 @@ ${invoiceFootHtml('')}`;
         const j = await r.json().catch(() => ({}));
         if (!r.ok || !j.ok) { if (!quiet) aiSay(j.error === 'too_soon' ? 'Already sent a moment ago. Try again in ' + j.wait_minutes + ' minute(s).' : 'Could not notify the search engines: ' + (j.detail || j.error || ('error ' + r.status)), true); }
         else if (!quiet && j.nothing_new) aiSay('Nothing new to send: every page was already sent to the search engines.', false);
-        else if (!quiet) aiSay('Sent ' + j.urls + ' page address' + (j.urls === 1 ? '' : 'es') + ' to Bing and the other IndexNow search engines. Google learns about you from your sitemap and Merchant Center feed (see Marketing \u2192 Search & AI).', false);
+        else if (!quiet) aiSay('Sent ' + j.urls + ' page address' + (j.urls === 1 ? '' : 'es') + ' to Bing and the other IndexNow search engines.' + (j.remaining ? ' ' + j.remaining + ' more are waiting: press the button again in 20+ minutes.' : '') + ' Google learns about you from your sitemap and Merchant Center feed (see Marketing \u2192 Search & AI).', false);
       } catch (e) { if (!quiet) aiSay('The request failed before any answer came back (' + ((e && e.message) || e) + '). Open the browser console (F12) \u2192 Network, press the button again and look at the request ai-seo?ping=1: its status and response show the reason.', true); }
       pingBusy = false;
     }
