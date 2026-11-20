@@ -9736,11 +9736,11 @@ ${invoiceFootHtml('')}`;
     async function aiPing(quiet) {
       if (pingBusy) return; pingBusy = true;
       try {
-        const r = await fetch(SITES[0][1] + '/api/seo-ping', { method: 'POST', headers: { authorization: 'Bearer ' + await accessToken() } });
+        const r = await fetch(SITES[0][1] + '/api/ai-seo?ping=1', { method: 'POST', headers: { authorization: 'Bearer ' + await accessToken() } });
         const j = await r.json().catch(() => ({}));
         if (!r.ok || !j.ok) { if (!quiet) aiSay(j.error === 'too_soon' ? 'Already sent a moment ago. Try again in ' + j.wait_minutes + ' minute(s).' : 'Could not notify the search engines: ' + (j.detail || j.error || ('error ' + r.status)), true); }
         else if (!quiet) aiSay('Sent ' + j.urls + ' page address' + (j.urls === 1 ? '' : 'es') + ' to Bing and the other IndexNow search engines. Google learns about you from your sitemap and Merchant Center feed (see Marketing \u2192 Search & AI).', false);
-      } catch (e) { if (!quiet) aiSay('The website did not answer. Make sure seo-ping.js was uploaded to the same api folder as ai-seo.js and the deploy finished, then try again.', true); }
+      } catch (e) { if (!quiet) aiSay('The website did not answer. Check that the latest ai-seo.js is uploaded and the deploy finished, then try again.', true); }
       pingBusy = false;
     }
     function profileCard(pf) {
