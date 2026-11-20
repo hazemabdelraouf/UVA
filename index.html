@@ -8373,6 +8373,8 @@ ${invoiceFootHtml('')}`;
     .sa-bar input[type=search]{flex:1;min-width:160px;width:auto}.sa-bar select{width:auto}.sa-bar .sa-btn{white-space:nowrap}
     .sa-row{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px;cursor:pointer}
     .sa-row:hover{border-color:var(--gold)}.sa-row.sub{margin-left:28px}
+    .sa-mv{display:inline-flex;gap:4px;margin-left:8px;vertical-align:middle}.sa-mv b{cursor:pointer;font-size:12px;line-height:1;padding:5px 7px;border-radius:7px;background:var(--panel-2);user-select:none}.sa-mv b:hover{background:var(--gold);color:#000}.sa-grip{cursor:grab}
+    .sa-row.dragging{opacity:.35}.sa-row.dropbefore{box-shadow:0 -3px 0 var(--gold)}.sa-row.dropafter{box-shadow:0 3px 0 var(--gold)}
     .sa-th{width:52px;height:52px;border-radius:8px;background:var(--panel-2);object-fit:cover}
     .sa-t{font-weight:700;font-size:14px}.sa-s{font-size:12px;color:var(--cream-dim)}
     .sa-pill{display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:99px;background:var(--panel-2);margin-right:4px}
@@ -8809,6 +8811,14 @@ ${invoiceFootHtml('')}`;
     const cnt = (label, html, max) => '<label>' + label + (max ? '<span class="sa-cnt"></span>' : '') + '</label>' + html;
 
     // ============ products ============
+    // In stock / Out of stock = forced by you; Real stock = follows the real quantity. The number is always the real quantity.
+    function stockPill(g, bal) {
+      const modes = Array.from(new Set(g.map(x => x.store_stock_mode || 'auto'))), m = modes.length === 1 ? modes[0] : 'mixed';
+      const lab = { auto: 'Real stock', in_stock: 'In stock (manual)', out_of_stock: 'Out of stock (manual)', mixed: 'Mixed' }[m];
+      const cls = m === 'auto' ? (bal > 0 ? 'ok' : 'off') : m === 'in_stock' ? 'ok' : m === 'out_of_stock' ? 'off' : 'warn';
+      const tip = m === 'auto' ? 'The website follows the real quantity' : m === 'mixed' ? 'Options use different stock settings' : 'Set manually in the editor';
+      return '<span class="sa-pill ' + cls + '" title="' + tip + '">' + lab + ' \u00b7 ' + bal + '</span>';
+    }
     function listHtml() {
       const q = norm(st.q).trim();
       const rows = groups().filter(g => {
@@ -8824,8 +8834,8 @@ ${invoiceFootHtml('')}`;
         const prices = g.map(x => Number(x.sale_price) || Number(x.regular_price) || 0).filter(Boolean);
         return '<div class="sa-row" data-open="' + E(gKey(g)) + '">' + (im ? '<img class="sa-th" src="' + E(im) + '" alt="">' : '<span class="sa-th"></span>') +
           '<div><div class="sa-t">' + E(r.title_arabic || r.title || r.sku) + '</div><div class="sa-s">' + E(r.title && r.title_arabic ? r.title + ' · ' : '') + g.map(x => E(x.sku)).join(', ') + '</div></div>' +
-          '<div style="text-align:right"><span class="sa-pill ' + (on ? 'ok' : 'off') + '">' + (on ? 'Visible' : 'Hidden') + '</span>' + (manual ? '<span class="sa-pill warn">Manual stock display</span>' : '') +
-          '<div class="sa-s">' + (prices.length ? Math.min.apply(null, prices) : '—') + ' EGP · Stock ' + bal + '</div></div></div>';
+          '<div style="text-align:right"><span class="sa-pill ' + (on ? 'ok' : 'off') + '">' + (on ? 'Visible' : 'Hidden') + '</span>' + stockPill(g, bal) +
+          '<div class="sa-s">' + (prices.length ? Math.min.apply(null, prices) : '—') + ' EGP</div></div></div>';
       }).join('');
     }
     function productsHtml() {
@@ -8848,7 +8858,7 @@ ${invoiceFootHtml('')}`;
     function aiGenBox() {
       const ed = st.ed;
       return '<div class="sa-card" style="max-width:none;box-shadow:none;border:1px dashed var(--line);margin:0 0 12px;padding:12px 14px">' +
-        '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b>\u2728 Fill the rest with AI</b><span class="sa-s" style="flex:1;min-width:220px">Write the title (Arabic or English), then press the button. It writes the other title, a structured description with a specifications table, the SEO titles and the meta descriptions, aimed at shoppers who search to buy.</span>' +
+        '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b>\u2728 Fill the rest with AI</b><span class="sa-s" style="flex:1;min-width:220px">Write the title (Arabic or English), then press the button. It writes the other title, a structured description with a specifications table, the SEO titles, the meta descriptions and a SKU for new options (saved SKUs are never changed), aimed at shoppers who search to buy.</span>' +
         '<button type="button" class="sa-btn pri" id="saAiGen" data-act="ai-gen"' + (ed.aiBusy ? ' disabled' : '') + '>' + (ed.aiBusy ? 'Writing\u2026' : '\u2728 Generate with AI') + '</button></div>' +
         '<details style="margin-top:8px"' + (ed.aiFacts ? ' open' : '') + '><summary class="sa-s" style="cursor:pointer">Facts you know about the product (optional, makes the text more accurate)</summary>' +
         '<textarea id="saAiFacts" rows="3" dir="auto" placeholder="e.g. 100% Arabica, Brazil, medium roast, chocolate and nuts notes, ground for Turkish coffee, 250 g pack" style="width:100%;margin-top:6px">' + E(ed.aiFacts || '') + '</textarea></details>' +
@@ -8865,16 +8875,36 @@ ${invoiceFootHtml('')}`;
       try {
         const r = await fetch(SITES[0][1] + '/api/ai-product', { method: 'POST', headers: { authorization: 'Bearer ' + await accessToken(), 'content-type': 'application/json' }, body: JSON.stringify({
           title_arabic: sh.title_arabic, title: sh.title, facts: ed.aiFacts, option1_name: sh.option1_name, option2_name: sh.option2_name,
-          variants: (ed.variants || []).map(v => ({ o1: v.option1_value, o2: v.option2_value, weight: v.weight })), collections: names, description_ar: sh.description_ar, description: sh.description }) });
+          variants: (ed.variants || []).map(v => ({ o1: v.option1_value, o2: v.option2_value, weight: v.weight })), collections: names, description_ar: sh.description_ar, description: sh.description, sku_examples: (st.products || []).map(x => String(x.sku || '').trim()).filter(Boolean).slice(0, 6) }) });
         const j = await r.json().catch(() => ({}));
         if (!r.ok || !j.ok) { ed.aiBusy = false; renderModal(); say(j.error === 'unauthorized' ? 'Please sign in again and retry.' : 'The AI could not write the page: ' + (j.detail || j.error || ('error ' + r.status))); return; }
         let filled = 0;
         Object.keys(j.fields || {}).forEach(k => { if (!(k in sh)) return; if (ed.aiOver || !String(sh[k] || '').trim()) { sh[k] = j.fields[k]; filled++; } });
+        // SKU: only for NEW options with an empty SKU (saved options keep theirs). Several options -> base + option/weight, always unique.
+        const skuBase = String((j.fields || {}).sku || '').toUpperCase().replace(/[^A-Z0-9-]/g, '').replace(/-{2,}/g, '-').replace(/^-|-$/g, '');
+        if (skuBase) {
+          const used = new Set((st.products || []).map(x => String(x.sku || '').trim().toLowerCase()).concat(ed.variants.map(v => String(v.sku || '').trim().toLowerCase()).filter(Boolean)));
+          ed.variants.forEach((v, i) => {
+            if (v.id || String(v.sku || '').trim()) return;
+            let part = ''; if (ed.variants.length > 1) { part = String(v.option1_value || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); if (!part && Number(v.weight) > 0) part = Math.round(Number(v.weight) * 1000) + 'G'; if (!part) part = String(i + 1); }
+            const first = (part ? skuBase.slice(0, 40 - part.length - 1) + '-' + part : skuBase).slice(0, 40); let cand = first, k = 1;
+            while (used.has(cand.toLowerCase())) cand = first.slice(0, 36) + '-' + (++k);
+            used.add(cand.toLowerCase()); v.sku = cand; filled++;
+          });
+        }
         const parts = [filled ? 'Done: ' + filled + ' field' + (filled === 1 ? '' : 's') + ' filled. Read the texts, edit anything you like, then press Save.' : 'Nothing to fill: every field already has text. Tick \u201cAlso replace fields that already have text\u201d to rewrite them.'];
         if ((j.checks || []).length) parts.push('Check before publishing: ' + j.checks.join(' '));
         if ((j.keywords || []).length) parts.push('Searches this page is written for: ' + j.keywords.join(' \u00b7 '));
         ed.aiBusy = false; ed.aiMsg = parts.join('\n'); renderModal();
       } catch (e) { ed.aiBusy = false; renderModal(); say('The AI could not be reached. Check your connection and try again.'); }
+    }
+    // Duplicate: opens a NEW product pre-filled from the one on screen (description, collections, pictures, options, prices). SKUs are empty.
+    function duplicateProduct() {
+      const ed = st.ed; if (!ed || ed.isNew || ed.busy || ed.uploading) return;
+      st.ed = { isNew: true, key: '', handle: '', msg: 'Copy created. Enter the new SKU (or press Generate with AI), change what you need (title, picture, price), then press Save. Change the English title too, otherwise its web address is already taken.', msgErr: false, busy: false, uploading: 0,
+        shared: Object.assign({}, ed.shared, { url_slug: '' }), cols: ed.cols.slice(), images: ed.images.slice(),
+        variants: ed.variants.map(v => ({ id: '', sku: '', option1_value: v.option1_value, option2_value: v.option2_value, sale_price: v.sale_price, regular_price: v.regular_price, store_stock_mode: v.store_stock_mode, variant_image: v.variant_image, weight: v.weight, balance: 0 })) };
+      renderModal(); const m = modal.querySelector('.sa-card'); if (m) m.scrollTop = 0; modal.scrollTop = 0;
     }
     function editorHtml() {
       const ed = st.ed, sh = ed.shared, dirOf = k => (/_ar$|^title_arabic$/.test(k) ? 'rtl' : /^(title|description|seo_title|seo_description)$/.test(k) ? 'ltr' : 'auto');
@@ -8904,12 +8934,12 @@ ${invoiceFootHtml('')}`;
             '<span class="sa-s">' + (v.id ? E(v.balance) : '—') + '</span>' + (v.id ? (ed.variants.length > 1 ? '<button class="sa-btn dan" data-delvar="' + i + '" title="Delete this option">×</button>' : '<span></span>') : '<button class="sa-btn dan" data-rmvar="' + i + '">×</button>') + '</div>' +
             '<div class="sa-oimg"><span class="sa-s">Picture for this option:</span><i class="sa-oi' + (!v.variant_image ? ' on' : '') + '" data-vimg="' + i + '|" title="Use the main picture">main</i>' +
             avail.map(u => '<img class="sa-oi' + (v.variant_image === u ? ' on' : '') + '" src="' + E(u) + '" alt="" data-vimg="' + i + '|' + E(u) + '">').join('') +
-            '<button class="sa-btn" data-vup="' + i + '">+ Upload</button></div></div>').join(''); })() +
+            '<button class="sa-btn" data-vup="' + i + '">' + (v.variant_image ? 'Replace picture' : '+ Upload') + '</button>' + (v.variant_image ? '<button class="sa-btn dan" data-vimgrm="' + i + '">Remove picture</button>' : '') + '</div></div>').join(''); })() +
         '<input type="file" id="saVFile" accept="image/*" hidden>' +
         '<button class="sa-btn" data-act="addvar">+ Add option</button>' + (ed.isNew ? '' : '<button class="sa-btn" data-act="mergeopen">Merge another product into this one…</button>') +
         (ed.merge ? '<div class="sa-opt"><div class="sa-s">Pick the product that should become an option of this one (it takes this product\'s name, description and pictures; its own picture stays on its option). Unsaved changes in this window are lost.</div><input data-mergeq placeholder="Search by name or SKU" value="' + E(ed.mergeQ || '') + '"><div id="saMergeList">' + mergeListHtml() + '</div></div>' : '') + '<div class="sa-note">Cost and real quantity are edited in Inventory, never here, and customers never see them.</div>' +
         '<div class="sa-msg ' + (ed.msgErr ? 'err' : 'ok') + '" id="saMsg">' + E(ed.msg) + '</div><div class="sa-foot">' +
-        (ed.isNew ? '' : '<button class="sa-btn dan" data-act="delprod">Delete</button><button class="sa-btn" data-act="copylink" data-url="' + E(url) + '">Copy link</button><a class="sa-btn" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent((sh.title_arabic || sh.title) + ' ' + url) + '">Share on WhatsApp</a>') +
+        (ed.isNew ? '' : '<button class="sa-btn dan" data-act="delprod">Delete</button><button class="sa-btn" data-act="dupprod" title="Open a copy of this product with an empty SKU">Duplicate</button><button class="sa-btn" data-act="copylink" data-url="' + E(url) + '">Copy link</button><a class="sa-btn" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent((sh.title_arabic || sh.title) + ' ' + url) + '">Share on WhatsApp</a>') +
         '<button class="sa-btn" data-act="cancel">Cancel</button><button class="sa-btn pri" data-act="saveprod"' + (ed.busy || ed.uploading ? ' disabled' : '') + '>' + (ed.uploading ? 'Uploading…' : 'Save') + '</button></div></div></div>';
     }
 
@@ -9041,15 +9071,15 @@ ${invoiceFootHtml('')}`;
     const descIds = id => { const seen = new Set(), q = [id]; while (q.length) { kids(q.shift()).forEach(k => { if (!seen.has(k.id)) { seen.add(k.id); q.push(k.id); } }); } return seen; };
     // A collection can sit under several parents: it is listed under each of them.
     const ordered = () => { const out = [], top = st.cols.filter(c => !pidsOf(c).some(id => st.cols.some(p => p.id === id)));
-      const walk = (c, lvl, path) => { out.push([c, lvl]); if (lvl < 3) kids(c.id).forEach(k => { if (!path.includes(k.id)) walk(k, lvl + 1, path.concat(k.id)); }); };
-      top.forEach(c => walk(c, 0, [c.id])); return out; };
+      const walk = (c, lvl, path, par) => { out.push([c, lvl, par]); if (lvl < 3) kids(c.id).forEach(k => { if (!path.includes(k.id)) walk(k, lvl + 1, path.concat(k.id), c.id); }); };
+      top.forEach(c => walk(c, 0, [c.id], '')); return out; };
     function collectionsHtml() {
       const q = norm(st.cq).trim();
       const rows = ordered().filter(([c]) => !q || norm([c.title, c.title_en, c.match_name].join(' ')).includes(q));
       return '<div class="sa-bar"><input type="search" id="saCQ" placeholder="Search collections (Arabic or English)" value="' + E(st.cq) + '"><button class="sa-btn" data-act="exportcols">Export to Excel</button><button class="sa-btn" data-act="import">Import from Excel</button><button class="sa-btn pri" data-act="newcol">+ New collection</button></div>' +
-        '<div class="sa-note" style="margin-bottom:10px">Top-level collections appear in the website menu; sub-collections appear under each parent they belong to. A parent page also shows the products of its sub-collections.</div><div id="saColList">' +
-        (rows.length ? rows.map(([c, lvl]) => '<div class="sa-row' + (lvl ? ' sub' : '') + '" data-opencol="' + E(c.id) + '">' + (c.image ? '<img class="sa-th" src="' + E(c.image) + '" alt="">' : '<span class="sa-th"></span>') +
-          '<div><div class="sa-t">' + E(colName(c, true)) + '</div><div class="sa-s">' + E(c.title_en || '') + ' · ' + membersOf(c.match_name).length + ' products</div></div><div style="text-align:right"><span class="sa-pill ' + (c.published ? 'ok' : 'off') + '">' + (c.published ? 'Visible' : 'Hidden') + '</span>' + (c.show_in_menu ? '<span class="sa-pill">Menu</span>' : '') + (c.show_on_home ? '<span class="sa-pill">Home</span>' : '') + '</div></div>').join('') : '<p class="sa-note">No collections</p>') + '</div>';
+        '<div class="sa-note" style="margin-bottom:10px">Top-level collections appear in the website menu; sub-collections appear under each parent they belong to. A parent page also shows the products of its sub-collections. <b>To change the order:</b> drag a collection by \u283F (or use \u25B2 \u25BC on a phone). It moves among the collections with the same parent, and the website menu follows this order.</div><div id="saColList">' +
+        (rows.length ? rows.map(([c, lvl, par]) => '<div class="sa-row' + (lvl ? ' sub' : '') + '" data-opencol="' + E(c.id) + '" data-colpar="' + E(par || '') + '"' + (q ? '' : ' draggable="true"') + '>' + (c.image ? '<img class="sa-th" src="' + E(c.image) + '" alt="">' : '<span class="sa-th"></span>') +
+          '<div><div class="sa-t">' + E(colName(c, true)) + '</div><div class="sa-s">' + E(c.title_en || '') + ' · ' + membersOf(c.match_name).length + ' products</div></div><div style="text-align:right"><span class="sa-pill ' + (c.published ? 'ok' : 'off') + '">' + (c.published ? 'Visible' : 'Hidden') + '</span>' + (c.show_in_menu ? '<span class="sa-pill">Menu</span>' : '') + (c.show_on_home ? '<span class="sa-pill">Home</span>' : '') + (q ? '' : '<span class="sa-mv"><b data-colmv="' + E(c.id) + '|-1" title="Move up">\u25B2</b><b data-colmv="' + E(c.id) + '|1" title="Move down">\u25BC</b><b class="sa-grip" title="Drag to reorder">\u283F</b></span>') + '</div></div>').join('') : '<p class="sa-note">No collections</p>') + '</div>';
     }
     function openCollection(id) {
       const c = st.cols.find(x => x.id === id);
@@ -9058,6 +9088,22 @@ ${invoiceFootHtml('')}`;
       PK['cd.parents'] = { kind: 'colids', ph: 'Put it under — search Arabic or English (leave empty for top level)', get: () => st.cd.f.parent_ids, set: v => { st.cd.f.parent_ids = v; }, exclude: () => { const me = st.cd.f.id; return me ? [me].concat(Array.from(descIds(me))) : []; } };
       PK['cd.add'] = { kind: 'handles', ph: 'Add products — search Arabic or English name or SKU', get: () => st.cd.add, set: v => { st.cd.add = v; }, exclude: () => st.cd.members.filter(h => !st.cd.remove.includes(h)) };
       renderModal();
+    }
+    // Reorder among siblings (same parent), then renumber sort_order for every collection (10, 20, 30...) and save only what changed.
+    async function reorderCols(id, par, targetId, after, step) {
+      const sibs = st.cols.filter(c => par ? pidsOf(c).includes(par) : !pidsOf(c).some(p => st.cols.some(x => x.id === p)));
+      const from = sibs.findIndex(c => c.id === id); if (from < 0) return;
+      const arr = sibs.slice(), m = arr.splice(from, 1)[0]; let ins;
+      if (step) { ins = from + step; if (ins < 0 || ins > arr.length) return; }
+      else { const t = arr.findIndex(c => c.id === targetId); if (t < 0) return; ins = t + (after ? 1 : 0); }
+      arr.splice(ins, 0, m);
+      const set = new Set(sibs.map(c => c.id)); let k = 0; const merged = st.cols.map(c => set.has(c.id) ? arr[k++] : c), changed = [];
+      merged.forEach((c, i) => { const so = (i + 1) * 10; if (Number(c.sort_order) !== so) { changed.push([c.id, so]); c.sort_order = so; } });
+      st.cols = merged; if (st.tab === 'collections') main.innerHTML = collectionsHtml();
+      if (!changed.length) return;
+      const res = await Promise.all(changed.map(x => SB().from('store_collections').update({ sort_order: x[1] }).eq('id', x[0])));
+      if (res.some(r => r.error)) { toast('Could not save the order'); await loadCols(); if (st.tab === 'collections') main.innerHTML = collectionsHtml(); return; }
+      queuePublish(); toast('Order saved');
     }
     function collectionEditorHtml() {
       const cd = st.cd, f = cd.f, i = (k, max, type) => '<input data-c="' + k + '" type="' + (type || 'text') + '" value="' + E(f[k]) + '"' + (max ? ' data-max="' + max + '"' : '') + ' dir="' + (/_en$|^title_en/.test(k) ? 'ltr' : /^(title|description|seo_title|seo_description)$/.test(k) ? 'rtl' : 'auto') + '">';
@@ -9616,11 +9662,12 @@ ${invoiceFootHtml('')}`;
     async function loadAi() {
       const keep = st.ai ? { msg: st.ai.msg, err: st.ai.err } : {};
       st.ai = { loading: true }; if (st.tab === 'aiseo') main.innerHTML = tabHtml();
-      const [run, sug, app] = await Promise.all([
+      const [run, sug, app, prof] = await Promise.all([
         SB().from('store_ai_runs').select('*').order('created_at', { ascending: false }).limit(1),
         SB().from('store_ai_suggestions').select('*').eq('status', 'new').order('priority', { ascending: true }).limit(60),
-        SB().from('store_ai_suggestions').select('id', { count: 'exact', head: true }).eq('status', 'applied')]);
-      st.ai = (run.error || sug.error) ? { error: (run.error || sug.error).message } : { run: (run.data || [])[0] || null, sugg: sug.data || [], applied: app.count || 0, msg: keep.msg || '', err: !!keep.err };
+        SB().from('store_ai_suggestions').select('id', { count: 'exact', head: true }).eq('status', 'applied'),
+        SB().from('store_settings').select('value').eq('key', 'ai_profile').maybeSingle()]);
+      st.ai = (run.error || sug.error) ? { error: (run.error || sug.error).message } : { run: (run.data || [])[0] || null, sugg: sug.data || [], applied: app.count || 0, profile: (prof && prof.data && prof.data.value) || null, msg: keep.msg || '', err: !!keep.err };
       if (st.tab === 'aiseo') main.innerHTML = tabHtml();
     }
     function aiSay(msg, bad) { if (!st.ai) return; st.ai.msg = msg; st.ai.err = !!bad; if (st.tab === 'aiseo') main.innerHTML = tabHtml(); }
@@ -9632,7 +9679,7 @@ ${invoiceFootHtml('')}`;
         const r = await fetch(SITES[0][1] + '/api/ai-seo', { method: 'POST', headers: { authorization: 'Bearer ' + await accessToken() } });
         const j = await r.json().catch(() => ({}));
         if (!r.ok || !j.ok) { bad = true; msg = j.error === 'too_soon' ? 'It ran a moment ago. Try again in ' + j.wait_minutes + ' minute(s).' : 'The review could not run: ' + (j.detail || j.error || ('error ' + r.status)); }
-        else msg = 'Done: ' + j.reviewed + ' pages reviewed, ' + j.suggestions + ' suggestion' + (j.suggestions === 1 ? '' : 's') + (j.failed ? ', ' + j.failed + ' could not be reviewed' : '') + '.';
+        else msg = 'Done: ' + j.reviewed + ' pages reviewed, ' + j.suggestions + ' suggestion' + (j.suggestions === 1 ? '' : 's') + (j.failed ? ', ' + j.failed + ' could not be reviewed' : '') + '.' + (j.already_good ? ' ' + j.already_good + ' pages skipped (already fine or reviewed recently) to save AI credit.' : '') + (j.profile_updated ? ' Your shop profile for AI assistants was refreshed.' : '');
       } catch (e) { bad = true; msg = 'The review could not run (the website function did not answer).'; }
       st.ai = { msg, err: bad }; await loadAi(); aiSay(msg, bad);
     }
@@ -9648,7 +9695,7 @@ ${invoiceFootHtml('')}`;
       } else r = await SB().from('store_collections').update(patch).eq('id', s.target_key).select('id');
       if (r.error || !(r.data || []).length) { aiSay('Could not apply “' + s.target_label + '”: ' + (r.error ? r.error.message : 'the page was not found (it may have been renamed or deleted)'), true); return false; }
       await SB().from('store_ai_suggestions').update({ status: 'applied', applied_at: new Date().toISOString() }).eq('id', id);
-      st.ai.sugg = st.ai.sugg.filter(x => x.id !== id); st.ai.applied = (st.ai.applied || 0) + 1;
+      st.ai.sugg = st.ai.sugg.filter(x => x.id !== id); st.ai.applied = (st.ai.applied || 0) + 1; schedulePing();
       queuePublish(); if (!quiet) aiSay('Applied to “' + s.target_label + '”. The website updates in a moment.', false);
       return true;
     }
@@ -9658,13 +9705,34 @@ ${invoiceFootHtml('')}`;
       aiSay(ok + ' suggestion' + (ok === 1 ? '' : 's') + ' applied. The website updates in a moment.', false);
     }
     async function aiDismiss(id) { await SB().from('store_ai_suggestions').update({ status: 'dismissed' }).eq('id', id); st.ai.sugg = (st.ai.sugg || []).filter(x => x.id !== id); main.innerHTML = tabHtml(); }
+    // Free (no AI credit): tells Bing and the other IndexNow search engines about your pages. Bing also feeds ChatGPT search.
+    let pingBusy = false, pingTimer = null;
+    const schedulePing = () => { clearTimeout(pingTimer); pingTimer = setTimeout(() => aiPing(true), 150000); };   // a little after the website rebuilds
+    async function aiPing(quiet) {
+      if (pingBusy) return; pingBusy = true;
+      try {
+        const r = await fetch(SITES[0][1] + '/api/seo-ping', { method: 'POST', headers: { authorization: 'Bearer ' + await accessToken() } });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.ok) { if (!quiet) aiSay(j.error === 'too_soon' ? 'Already sent a moment ago. Try again in ' + j.wait_minutes + ' minute(s).' : 'Could not notify the search engines: ' + (j.detail || j.error || ('error ' + r.status)), true); }
+        else if (!quiet) aiSay('Sent ' + j.urls + ' page address' + (j.urls === 1 ? '' : 'es') + ' to Bing and the other IndexNow search engines. Google learns about you from your sitemap and Merchant Center feed (see Marketing \u2192 Search & AI).', false);
+      } catch (e) { if (!quiet) aiSay('The website did not answer.', true); }
+      pingBusy = false;
+    }
+    function profileCard(pf) {
+      const box = (title, text, dir) => text ? '<label>' + title + '</label><textarea readonly rows="3" dir="' + dir + '">' + E(text) + '</textarea><button class="sa-btn" data-copy="' + E(text) + '">Copy</button>' : '';
+      let h = '<div class="sa-sec">Your shop, introduced to Google, Bing and AI assistants</div>';
+      if (!pf || !(pf.intro_ar || pf.intro_en)) return h + '<p class="sa-note">Not written yet. The next review writes it from your real products and sales, then refreshes it once a week.</p>';
+      h += '<div class="sa-note">Written from your real products and sales, refreshed weekly (' + aiAgo(pf.updated_at) + '). Paste it where shops are described: Google Business Profile, Merchant Center, your Instagram and Facebook bio. It only uses facts from your store.</div>' + box('Arabic', pf.intro_ar, 'rtl') + box('English', pf.intro_en, 'ltr');
+      if ((pf.picks || []).length) h += '<label style="margin-top:10px">Products to recommend first (selling and in stock)</label>' + pf.picks.map(p => '<div class="sa-row" style="grid-template-columns:1fr auto;cursor:default"><div><div class="sa-t">' + E(p.title_ar || p.title_en || p.key) + '</div><div class="sa-s" dir="auto">' + E(p.line_en || p.line_ar || '') + '</div></div><span class="sa-pill">' + (p.price_from ? E(p.price_from) + ' EGP' : '') + '</span></div>').join('');
+      return h;
+    }
     function aiHtml() {
       const a = st.ai;
       if (!a || a.loading) return '<p class="sa-note">Loading…</p>';
       if (a.error) return '<div class="sa-msg err">' + E(a.error) + '</div><div class="sa-note">Run <b>sql/13_store_ai_seo.sql</b> in Supabase first.</div>';
       const run = a.run, sugg = a.sugg || [], cut = (t, n) => { t = String(t || ''); return t.length > n ? t.slice(0, n) + '…' : t; };
       let h = '<div class="sa-bar"><button class="sa-btn pri" data-act="ai-run"' + (a.running ? ' disabled' : '') + '>' + (a.running ? 'Reviewing… this takes up to a minute' : 'Run the review now') + '</button>' +
-        (sugg.length > 1 ? '<button class="sa-btn" data-act="ai-applyall">Apply all (' + sugg.length + ')</button>' : '') + '<span class="sa-s">' + (run ? 'Last review ' + aiAgo(run.created_at) : 'No review yet') + '</span></div>';
+        (sugg.length > 1 ? '<button class="sa-btn" data-act="ai-applyall">Apply all (' + sugg.length + ')</button>' : '') + '<button class="sa-btn" data-act="ai-ping" title="Free: no AI credit used">Tell Bing &amp; AI search about my site</button>' + '<span class="sa-s">' + (run ? 'Last review ' + aiAgo(run.created_at) : 'No review yet') + '</span></div>';
       if (a.msg) h += '<div class="sa-msg ' + (a.err ? 'err' : 'ok') + '">' + E(a.msg) + '</div>';
       if (run && (run.summary || (run.insights || []).length)) h += '<div class="sa-sec">Latest review</div>' + (run.summary ? '<p style="margin:6px 0;line-height:1.6">' + E(run.summary) + '</p>' : '') + ((run.insights || []).length ? '<ul style="margin:6px 20px;line-height:1.7">' + run.insights.map(x => '<li>' + E(x) + '</li>').join('') + '</ul>' : '');
       h += '<div class="sa-sec">Suggestions waiting for you (' + sugg.length + ')</div>';
@@ -9673,7 +9741,8 @@ ${invoiceFootHtml('')}`;
         '<button class="sa-btn pri" data-act="ai-apply" data-id="' + E(s.id) + '">Apply</button><button class="sa-btn" data-act="ai-dismiss" data-id="' + E(s.id) + '">Dismiss</button></div>' + (s.reason ? '<div class="sa-note" style="margin-bottom:6px">' + E(s.reason) + '</div>' : '') +
         Object.keys(s.changes || {}).map(f => { const c = s.changes[f] || {}; return '<label style="display:block;margin-top:8px">' + E(aiLabel(s.kind, f)) + '</label><div class="sa-s" style="opacity:.75;margin:2px 0 4px" dir="auto">Now: ' + (c.from ? E(cut(c.from, 300)) : 'empty') + '</div>' +
           '<textarea data-aiedit="' + E(s.id) + '|' + E(f) + '" rows="' + (/^description/.test(f) ? 6 : 2) + '" dir="auto">' + E(c.to) + '</textarea>'; }).join('') + '</div>').join('');
-      h += '<div class="sa-note" style="margin-top:12px">' + anNf(a.applied) + ' suggestion' + (a.applied === 1 ? '' : 's') + ' applied so far. The review looks at your products and collections, visitors, searches and sales of the last 30 days, and picks the pages that need attention most.</div>';
+      h += profileCard(a.profile);
+      h += '<div class="sa-note" style="margin-top:12px">' + anNf(a.applied) + ' suggestion' + (a.applied === 1 ? '' : 's') + ' applied so far. To save credit the review only spends AI on pages that really need it (missing SEO text, or views without add-to-cart) and skips pages it reviewed in the last 14 days. The findings above are calculated from your numbers for free.</div>';
       return h;
     }
 
@@ -9794,7 +9863,8 @@ ${invoiceFootHtml('')}`;
       if (t.dataset.unpick !== undefined) { const id = t.closest('[data-pk]').dataset.pk, p = PK[id]; p.set(p.get().filter(v => v !== t.dataset.unpick)); pkRefresh(id); return; }
       if (t.dataset.rmimg !== undefined) { st.ed.images.splice(+t.dataset.rmimg, 1); renderModal(); return; }
       if (t.dataset.firstimg !== undefined) { const u = st.ed.images.splice(+t.dataset.firstimg, 1)[0]; st.ed.images.unshift(u); renderModal(); return; }
-      if (t.dataset.vimg !== undefined && st.ed) { const q = t.dataset.vimg.split('|'); st.ed.variants[+q[0]].variant_image = q.slice(1).join('|'); renderModal(); return; }
+      if (t.dataset.vimgrm !== undefined && st.ed) { st.ed.variants[+t.dataset.vimgrm].variant_image = ''; renderModal(); return; }
+      if (t.dataset.vimg !== undefined && st.ed) { const q = t.dataset.vimg.split('|'), vv = st.ed.variants[+q[0]], u = q.slice(1).join('|'); vv.variant_image = (u && vv.variant_image === u) ? '' : u; renderModal(); return; }   // click the chosen picture again = unselect
       if (t.dataset.vup !== undefined && st.ed) { st.vupIdx = +t.dataset.vup; $('saVFile').click(); return; }
       if (t.dataset.delvar !== undefined && st.ed) { await deleteOption(+t.dataset.delvar); return; }
       if (t.dataset.rmvar !== undefined) { st.ed.variants.splice(+t.dataset.rmvar, 1); renderModal(); return; }
@@ -9827,6 +9897,8 @@ ${invoiceFootHtml('')}`;
       const sl = t.dataset; if (sl.slup !== undefined || sl.sldn !== undefined || sl.sldel !== undefined) { const s = st.app.hero.slides, n = +(sl.slup ?? sl.sldn ?? sl.sldel); if (sl.sldel !== undefined) s.splice(n, 1); else { const m = sl.slup !== undefined ? n - 1 : n + 1; if (m >= 0 && m < s.length) { const x = s[n]; s[n] = s[m]; s[m] = x; } } main.innerHTML = appearanceHtml(); return; }
       if (sl.slimg) { st.slTarget = sl.slimg; $('saSlFile').click(); return; }
       const mp = t.closest('[data-mergepick]'); if (mp && st.ed) { await mergeInto(mp.dataset.mergepick); return; }
+      const cm = t.closest('[data-colmv]'); if (cm) { const q2 = cm.dataset.colmv.split('|'), rw = cm.closest('[data-opencol]'); await reorderCols(q2[0], rw ? (rw.dataset.colpar || '') : '', null, false, +q2[1]); return; }
+      if (t.closest('.sa-grip')) return;
       const oc = t.closest('[data-opencol]'); if (oc) { openCollection(oc.dataset.opencol); return; }
       const di = t.closest('[data-editdisc]'); if (di) { openDiscount(di.dataset.editdisc); return; }
       if (open && !act) { openEditor(open.dataset.open); return; }
@@ -9834,6 +9906,7 @@ ${invoiceFootHtml('')}`;
       const a = act.dataset.act;
       if (a === 'an-refresh') { st.ovxAt = 0; loadAnalytics(); }
       else if (a === 'ai-run') aiRun();
+      else if (a === 'ai-ping') aiPing();
       else if (a === 'ai-apply') aiApply(act.dataset.id);
       else if (a === 'ai-dismiss') aiDismiss(act.dataset.id);
       else if (a === 'ai-applyall') aiApplyAll();
@@ -9850,6 +9923,7 @@ ${invoiceFootHtml('')}`;
       else if (a === 'pick') $('saFile').click();
       else if (a === 'addurl') { const u = $('saUrl').value.trim(); if (/^https?:\/\//i.test(u)) { st.ed.images.push(u); renderModal(); } }
       else if (a === 'copylink') { try { await navigator.clipboard.writeText(act.dataset.url); toast('Link copied'); } catch (x) { toast('Copy failed'); } }
+      else if (a === 'dupprod') duplicateProduct();
       else if (a === 'saveprod') await saveProduct();
       else if (a === 'delprod') await deleteProduct();
       else if (a === 'mergeopen') { if (st.ed) { st.ed.merge = !st.ed.merge; st.ed.mergeQ = ''; renderModal(); } }
@@ -9950,6 +10024,11 @@ ${invoiceFootHtml('')}`;
       else if (t.dataset.m !== undefined && st.mk) { const p = t.dataset.m.split('.'); if (p.length === 2) st.mk[p[0]][p[1]] = t.value; else st.mk[p[0]] = t.value; }
       else if (t.dataset.u !== undefined) { st.utm[t.dataset.u] = t.value; const o = $('saUtmOut'); if (o) o.textContent = utmLink(); }
     });
+    let dragCol = null; const clearDrop = () => root.querySelectorAll('.dragging,.dropbefore,.dropafter').forEach(x => x.classList.remove('dragging', 'dropbefore', 'dropafter'));
+    root.addEventListener('dragstart', e => { const r = e.target.closest && e.target.closest('[data-opencol][draggable="true"]'); if (!r) return; dragCol = { id: r.dataset.opencol, par: r.dataset.colpar || '' }; r.classList.add('dragging'); try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragCol.id); } catch (x) { /* ignore */ } });
+    root.addEventListener('dragover', e => { if (!dragCol) return; const r = e.target.closest && e.target.closest('[data-opencol]'); if (!r || r.dataset.opencol === dragCol.id || (r.dataset.colpar || '') !== dragCol.par) return; e.preventDefault(); root.querySelectorAll('.dropbefore,.dropafter').forEach(x => x.classList.remove('dropbefore', 'dropafter')); const b = r.getBoundingClientRect(); r.classList.add(e.clientY > b.top + b.height / 2 ? 'dropafter' : 'dropbefore'); });
+    root.addEventListener('drop', e => { if (!dragCol) return; const r = e.target.closest && e.target.closest('[data-opencol]'); if (!r || r.dataset.opencol === dragCol.id || (r.dataset.colpar || '') !== dragCol.par) { clearDrop(); dragCol = null; return; } e.preventDefault(); const after = r.classList.contains('dropafter'), d = dragCol; clearDrop(); dragCol = null; reorderCols(d.id, d.par, r.dataset.opencol, after); });
+    root.addEventListener('dragend', () => { clearDrop(); dragCol = null; });
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && !root.hidden) { if (st.ed || st.dd || st.cd || st.imp) { st.ed = st.dd = st.cd = st.imp = null; renderModal(); } else root.hidden = true; } });
   })();
 
