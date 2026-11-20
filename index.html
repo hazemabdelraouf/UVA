@@ -8409,7 +8409,9 @@ ${invoiceFootHtml('')}`;
     .sa-im.first{border-color:var(--sage)}.sa-im img{width:100%;height:100%;object-fit:cover}
     .sa-im b{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.65);color:#fff;border-radius:6px;width:22px;height:22px;text-align:center;line-height:22px;cursor:pointer;font-size:13px}
     .sa-im i{position:absolute;bottom:2px;left:2px;background:rgba(0,0,0,.65);color:#fff;border-radius:6px;padding:0 6px;font-size:11px;font-style:normal;cursor:pointer}
-    .sa-var{display:grid;grid-template-columns:1.2fr 1fr 1fr .9fr .9fr .8fr 1.1fr .6fr auto;gap:6px;align-items:end;margin-bottom:6px}
+    .sa-var{display:grid;grid-template-columns:1.2fr 1fr 1fr .9fr .9fr .8fr 1.1fr .6fr;gap:6px;align-items:end;margin-bottom:6px}
+    .sa-optn{display:flex;align-items:center;justify-content:space-between;gap:8px}.sa-optdel{border:1px solid var(--line);background:transparent;color:var(--rust);border-radius:8px;padding:3px 10px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+    .sa-oiw{position:relative;display:inline-block;width:44px;height:44px;flex:none}.sa-oiw .sa-oi{display:block}.sa-oiw b{position:absolute;top:-6px;right:-6px;width:18px;height:18px;line-height:18px;text-align:center;border-radius:50%;background:rgba(0,0,0,.75);color:#fff;font-size:12px;cursor:pointer}
     .sa-opt{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0;background:rgba(127,127,127,.04)}.sa-optn{font-weight:800;font-size:13px;margin-bottom:6px}
     .sa-oimg{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px}.sa-oi{width:44px;height:44px;border-radius:8px;object-fit:cover;border:2px solid transparent;cursor:pointer;opacity:.7;box-sizing:border-box}.sa-oi.on{border-color:var(--gold);opacity:1}
     i.sa-oi{display:grid;place-items:center;font-size:10px;font-style:normal;background:rgba(127,127,127,.18);color:var(--cream)}.sa-var .h{font-size:11px;color:var(--cream-dim);font-weight:700}
@@ -8808,7 +8810,15 @@ ${invoiceFootHtml('')}`;
       renderModal();
       if (st.tab === 'integrations') loadEvents();
     }
-    function renderModal() { modal.innerHTML = st.ed ? editorHtml() : st.cd ? collectionEditorHtml() : st.dd ? discountFormHtml() : st.imp ? importHtml() : ''; updateCounters(); }
+    function renderModal() {
+      // keep the scroll position when the same window is redrawn (deleting a picture/option must not jump back to the top)
+      const kind = st.ed ? 'ed' : st.cd ? 'cd' : st.dd ? 'dd' : st.imp ? 'imp' : '';
+      const old = modal.querySelector('.sa-mod'), keep = (old && modal.dataset.kind === kind) ? old.scrollTop : null;
+      modal.innerHTML = st.ed ? editorHtml() : st.cd ? collectionEditorHtml() : st.dd ? discountFormHtml() : st.imp ? importHtml() : '';
+      modal.dataset.kind = kind;
+      if (keep != null) { const m = modal.querySelector('.sa-mod'); if (m) m.scrollTop = keep; }
+      updateCounters();
+    }
     function updateCounters() { root.querySelectorAll('[data-max]').forEach(el => { const c = el.parentElement.querySelector('.sa-cnt'); if (c) { const n = el.value.length; c.textContent = n + '/' + el.dataset.max; c.classList.toggle('bad', n > +el.dataset.max); } }); }
     const cnt = (label, html, max) => '<label>' + label + (max ? '<span class="sa-cnt"></span>' : '') + '</label>' + html;
 
@@ -8929,7 +8939,7 @@ ${invoiceFootHtml('')}`;
         '<div class="sa-sec">Options — what the customer chooses between (size, weight, colour…)</div><div class="sa-note">Name the choice once, then add one line per option. <b>Each option has its own price, weight and picture.</b> Example: name “Size”, options 250 g / 500 g / 1 kg with their own prices and weights. The weight (kg) is what the shipping price is calculated from.</div>' +
         '<div class="sa-g2"><div><label>Option name — what the customer chooses (e.g. Size, Weight, Colour)</label>' + f('option1_name') + '</div><div><label>Second option name (optional, e.g. Colour)</label>' + f('option2_name') + '</div></div>' +
         (() => { const avail = Array.from(new Set(ed.images.concat(ed.variants.map(x => x.variant_image).filter(Boolean))));
-          return '<div class="sa-note"><b>Sale price</b> = what the customer pays. <b>Price before discount</b> = the old price shown crossed out (leave empty if there is no discount).</div>' + ed.variants.map((v, i) => '<div class="sa-opt"><div class="sa-optn">Option ' + (i + 1) + (v.option1_value ? ' — ' + E(v.option1_value) : '') + '</div>' +
+          return '<div class="sa-note"><b>Sale price</b> = what the customer pays. <b>Price before discount</b> = the old price shown crossed out (leave empty if there is no discount).</div>' + ed.variants.map((v, i) => '<div class="sa-opt"><div class="sa-optn"><span>Option ' + (i + 1) + (v.option1_value ? ' — ' + E(v.option1_value) : '') + '</span>' + (v.id ? (ed.variants.length > 1 ? '<button class="sa-optdel" data-delvar="' + i + '" title="Delete this option">Delete option</button>' : '') : '<button class="sa-optdel" data-rmvar="' + i + '" title="Remove this option">Delete option</button>') + '</div>' +
             '<div class="sa-var">' +
             '<div class="sa-f sa-w"><span class="h">SKU</span><input data-v="' + i + '.sku" value="' + E(v.sku) + '"' + (v.id ? ' readonly' : '') + '></div>' +
             '<div class="sa-f"><span class="h">Value 1</span><input data-v="' + i + '.option1_value" value="' + E(v.option1_value) + '" placeholder="e.g. 250 g"></div>' +
@@ -8939,10 +8949,10 @@ ${invoiceFootHtml('')}`;
             '<div class="sa-f"><span class="h">Weight (kg)</span><input data-v="' + i + '.weight" type="text" inputmode="decimal" value="' + E(v.weight) + '" placeholder="0.25"></div>' +
             '<div class="sa-f"><span class="h">Stock display</span>' + modeSel(i, v.store_stock_mode) + '</div>' +
             '<div class="sa-f"><span class="h">Real stock</span><span class="sa-s">' + (v.id ? E(v.balance) : '—') + '</span></div>' +
-            '<div class="sa-f sa-x"><span class="h">&nbsp;</span>' + (v.id ? (ed.variants.length > 1 ? '<button class="sa-btn dan" data-delvar="' + i + '" title="Delete this option">×</button>' : '<span></span>') : '<button class="sa-btn dan" data-rmvar="' + i + '">×</button>') + '</div></div>' +
+            '</div>' +
             '<div class="sa-oimg"><span class="sa-s">Picture for this option:</span><i class="sa-oi' + (!v.variant_image ? ' on' : '') + '" data-vimg="' + i + '|" title="Use the main picture">main</i>' +
-            avail.map(u => '<img class="sa-oi' + (v.variant_image === u ? ' on' : '') + '" src="' + E(u) + '" alt="" data-vimg="' + i + '|' + E(u) + '">').join('') +
-            '<button class="sa-btn" data-vup="' + i + '">' + (v.variant_image ? 'Replace picture' : '+ Upload') + '</button>' + (v.variant_image ? '<button class="sa-btn dan" data-vimgrm="' + i + '">Remove picture</button>' : '') + '</div></div>').join(''); })() +
+            avail.map(u => v.variant_image === u ? '<span class="sa-oiw"><img class="sa-oi on" src="' + E(u) + '" alt="" data-vimg="' + i + '|' + E(u) + '"><b data-vimgrm="' + i + '" title="Remove picture">×</b></span>' : '<img class="sa-oi" src="' + E(u) + '" alt="" data-vimg="' + i + '|' + E(u) + '">').join('') +
+            '<button class="sa-btn" data-vup="' + i + '">' + (v.variant_image ? 'Replace picture' : '+ Upload') + '</button>' + '</div></div>').join(''); })() +
         '<input type="file" id="saVFile" accept="image/*" hidden>' +
         '<button class="sa-btn" data-act="addvar">+ Add option</button>' + (ed.isNew ? '' : '<button class="sa-btn" data-act="mergeopen">Merge another product into this one…</button>') +
         (ed.merge ? '<div class="sa-opt"><div class="sa-s">Pick the product that should become an option of this one (it takes this product\'s name, description and pictures; its own picture stays on its option). Unsaved changes in this window are lost.</div><input data-mergeq placeholder="Search by name or SKU" value="' + E(ed.mergeQ || '') + '"><div id="saMergeList">' + mergeListHtml() + '</div></div>' : '') + '<div class="sa-note">Cost and real quantity are edited in Inventory, never here, and customers never see them.</div>' +
@@ -9900,7 +9910,7 @@ ${invoiceFootHtml('')}`;
       if (t.dataset.vimg !== undefined && st.ed) { const q = t.dataset.vimg.split('|'), vv = st.ed.variants[+q[0]], u = q.slice(1).join('|'); vv.variant_image = (u && vv.variant_image === u) ? '' : u; renderModal(); return; }   // click the chosen picture again = unselect
       if (t.dataset.vup !== undefined && st.ed) { st.vupIdx = +t.dataset.vup; $('saVFile').click(); return; }
       if (t.dataset.delvar !== undefined && st.ed) { await deleteOption(+t.dataset.delvar); return; }
-      if (t.dataset.rmvar !== undefined) { st.ed.variants.splice(+t.dataset.rmvar, 1); renderModal(); return; }
+      if (t.dataset.rmvar !== undefined) { const rv = st.ed.variants[+t.dataset.rmvar]; if (rv && (rv.sku || rv.option1_value || rv.option2_value || rv.sale_price || rv.regular_price || rv.weight) && !confirm('Remove this option?')) return; st.ed.variants.splice(+t.dataset.rmvar, 1); renderModal(); return; }
       if (t.dataset.rmmember !== undefined) { st.cd.remove.push(t.dataset.rmmember); renderModal(); return; }
       const wa = t.closest('[data-wa]'); if (wa) { const c = st.carts.find(x => x.cart_id === wa.dataset.wa); if (c && !c.contacted_at) setTimeout(() => cartUpdate(c.cart_id, { contacted_at: new Date().toISOString() }), 400); return; }
       if (t.dataset.cdone) { await cartUpdate(t.dataset.cdone, { contacted_at: new Date().toISOString() }); return; }
