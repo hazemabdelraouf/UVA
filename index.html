@@ -8374,6 +8374,7 @@ ${invoiceFootHtml('')}`;
     .sa-row{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px;cursor:pointer}
     .sa-row:hover{border-color:var(--gold)}.sa-row.sub{margin-left:28px}
     .sa-mv{display:inline-flex;gap:4px;margin-left:8px;vertical-align:middle}.sa-mv b{cursor:pointer;font-size:12px;line-height:1;padding:5px 7px;border-radius:7px;background:var(--panel-2);user-select:none}.sa-mv b:hover{background:var(--gold);color:#000}.sa-grip{cursor:grab}
+    .sa-fold{cursor:pointer;display:inline-block;width:22px;text-align:center;border-radius:6px;background:var(--panel-2);margin-inline-end:6px;user-select:none;font-size:12px}.sa-fold:hover{background:var(--gold);color:#000}.sa-row.dropinto{outline:2px dashed var(--gold);outline-offset:-2px}
     .sa-row.dragging{opacity:.35}.sa-row.dropbefore{box-shadow:0 -3px 0 var(--gold)}.sa-row.dropafter{box-shadow:0 3px 0 var(--gold)}
     .sa-th{width:52px;height:52px;border-radius:8px;background:var(--panel-2);object-fit:cover}
     .sa-t{font-weight:700;font-size:14px}.sa-s{font-size:12px;color:var(--cream-dim)}
@@ -9073,13 +9074,19 @@ ${invoiceFootHtml('')}`;
     const ordered = () => { const out = [], top = st.cols.filter(c => !pidsOf(c).some(id => st.cols.some(p => p.id === id)));
       const walk = (c, lvl, path, par) => { out.push([c, lvl, par]); if (lvl < 3) kids(c.id).forEach(k => { if (!path.includes(k.id)) walk(k, lvl + 1, path.concat(k.id), c.id); }); };
       top.forEach(c => walk(c, 0, [c.id], '')); return out; };
+    const loadFold = () => { try { return new Set(JSON.parse(localStorage.getItem('uvaColFold') || '[]')); } catch (e) { return new Set(); } };
+    const saveFold = () => { try { localStorage.setItem('uvaColFold', JSON.stringify(Array.from(st.colFold))); } catch (e) { /* ignore */ } };
     function collectionsHtml() {
-      const q = norm(st.cq).trim();
-      const rows = ordered().filter(([c]) => !q || norm([c.title, c.title_en, c.match_name].join(' ')).includes(q));
-      return '<div class="sa-bar"><input type="search" id="saCQ" placeholder="Search collections (Arabic or English)" value="' + E(st.cq) + '"><button class="sa-btn" data-act="exportcols">Export to Excel</button><button class="sa-btn" data-act="import">Import from Excel</button><button class="sa-btn pri" data-act="newcol">+ New collection</button></div>' +
-        '<div class="sa-note" style="margin-bottom:10px">Top-level collections appear in the website menu; sub-collections appear under each parent they belong to. A parent page also shows the products of its sub-collections. <b>To change the order:</b> drag a collection by \u283F (or use \u25B2 \u25BC on a phone). It moves among the collections with the same parent, and the website menu follows this order.</div><div id="saColList">' +
-        (rows.length ? rows.map(([c, lvl, par]) => '<div class="sa-row' + (lvl ? ' sub' : '') + '" data-opencol="' + E(c.id) + '" data-colpar="' + E(par || '') + '"' + (q ? '' : ' draggable="true"') + '>' + (c.image ? '<img class="sa-th" src="' + E(c.image) + '" alt="">' : '<span class="sa-th"></span>') +
-          '<div><div class="sa-t">' + E(colName(c, true)) + '</div><div class="sa-s">' + E(c.title_en || '') + ' · ' + membersOf(c.match_name).length + ' products</div></div><div style="text-align:right"><span class="sa-pill ' + (c.published ? 'ok' : 'off') + '">' + (c.published ? 'Visible' : 'Hidden') + '</span>' + (c.show_in_menu ? '<span class="sa-pill">Menu</span>' : '') + (c.show_on_home ? '<span class="sa-pill">Home</span>' : '') + (q ? '' : '<span class="sa-mv"><b data-colmv="' + E(c.id) + '|-1" title="Move up">\u25B2</b><b data-colmv="' + E(c.id) + '|1" title="Move down">\u25BC</b><b class="sa-grip" title="Drag to reorder">\u283F</b></span>') + '</div></div>').join('') : '<p class="sa-note">No collections</p>') + '</div>';
+      const q = norm(st.cq).trim(), fold = st.colFold || (st.colFold = loadFold());
+      let skip = -1;   // rows are in tree order: hide everything deeper than a folded row
+      const rows = ordered().filter(([c, lvl]) => {
+        if (q) return norm([c.title, c.title_en, c.match_name].join(' ')).includes(q);
+        if (skip >= 0 && lvl > skip) return false; skip = -1;
+        if (fold.has(c.id) && kids(c.id).length) skip = lvl; return true; });
+      return '<div class="sa-bar"><input type="search" id="saCQ" placeholder="Search collections (Arabic or English)" value="' + E(st.cq) + '"><button class="sa-btn" data-act="colfold">Collapse all</button><button class="sa-btn" data-act="colunfold">Expand all</button><button class="sa-btn" data-act="exportcols">Export to Excel</button><button class="sa-btn" data-act="import">Import from Excel</button><button class="sa-btn pri" data-act="newcol">+ New collection</button></div>' +
+        '<div class="sa-note" style="margin-bottom:10px">Top-level collections appear in the website menu; sub-collections appear under each parent they belong to. A parent page also shows the products of its sub-collections. <b>To change the order:</b> drag a collection by \u283F (or use \u25B2 \u25BC on a phone). You can drop it anywhere: on the top or bottom edge of another collection to put it before or after it, or on the middle of a collection to make it a sub-collection of it. Press \u25BE / \u25B8 to fold or unfold the sub-collections. The website menu follows this order.</div><div id="saColList">' +
+        (rows.length ? rows.map(([c, lvl, par]) => '<div class="sa-row' + (lvl ? ' sub' : '') + '" data-opencol="' + E(c.id) + '" data-colpar="' + E(par || '') + '" data-collvl="' + lvl + '"' + (lvl > 1 ? ' style="margin-left:' + (lvl * 28) + 'px"' : '') + (q ? '' : ' draggable="true"') + '>' + (c.image ? '<img class="sa-th" src="' + E(c.image) + '" alt="">' : '<span class="sa-th"></span>') +
+          '<div><div class="sa-t">' + (!q && kids(c.id).length ? '<b class="sa-fold" data-colfold="' + E(c.id) + '" title="Fold / unfold sub-collections">' + (fold.has(c.id) ? '\u25B8' : '\u25BE') + '</b>' : '') + E(colName(c, true)) + '</div><div class="sa-s">' + E(c.title_en || '') + ' · ' + membersOf(c.match_name).length + ' products' + (kids(c.id).length ? ' · ' + kids(c.id).length + ' sub' : '') + '</div></div><div style="text-align:right"><span class="sa-pill ' + (c.published ? 'ok' : 'off') + '">' + (c.published ? 'Visible' : 'Hidden') + '</span>' + (c.show_in_menu ? '<span class="sa-pill">Menu</span>' : '') + (c.show_on_home ? '<span class="sa-pill">Home</span>' : '') + (q ? '' : '<span class="sa-mv"><b data-colmv="' + E(c.id) + '|-1" title="Move up">\u25B2</b><b data-colmv="' + E(c.id) + '|1" title="Move down">\u25BC</b><b class="sa-grip" title="Drag to reorder">\u283F</b></span>') + '</div></div>').join('') : '<p class="sa-note">No collections</p>') + '</div>';
     }
     function openCollection(id) {
       const c = st.cols.find(x => x.id === id);
@@ -9089,21 +9096,39 @@ ${invoiceFootHtml('')}`;
       PK['cd.add'] = { kind: 'handles', ph: 'Add products — search Arabic or English name or SKU', get: () => st.cd.add, set: v => { st.cd.add = v; }, exclude: () => st.cd.members.filter(h => !st.cd.remove.includes(h)) };
       renderModal();
     }
-    // Reorder among siblings (same parent), then renumber sort_order for every collection (10, 20, 30...) and save only what changed.
-    async function reorderCols(id, par, targetId, after, step) {
+    // Move a collection: reorder among siblings and/or give it a new parent. Then renumber sort_order (10, 20, 30...) and save only what changed.
+    async function reorderCols(id, par, targetId, after, step, newParents) {
+      const me = st.cols.find(c => c.id === id); if (!me) return;
+      if (newParents) { me.parent_ids = newParents.slice(); me.parent_id = newParents[0] || null; }
       const sibs = st.cols.filter(c => par ? pidsOf(c).includes(par) : !pidsOf(c).some(p => st.cols.some(x => x.id === p)));
       const from = sibs.findIndex(c => c.id === id); if (from < 0) return;
       const arr = sibs.slice(), m = arr.splice(from, 1)[0]; let ins;
       if (step) { ins = from + step; if (ins < 0 || ins > arr.length) return; }
+      else if (targetId == null) ins = arr.length;
       else { const t = arr.findIndex(c => c.id === targetId); if (t < 0) return; ins = t + (after ? 1 : 0); }
       arr.splice(ins, 0, m);
       const set = new Set(sibs.map(c => c.id)); let k = 0; const merged = st.cols.map(c => set.has(c.id) ? arr[k++] : c), changed = [];
       merged.forEach((c, i) => { const so = (i + 1) * 10; if (Number(c.sort_order) !== so) { changed.push([c.id, so]); c.sort_order = so; } });
       st.cols = merged; if (st.tab === 'collections') main.innerHTML = collectionsHtml();
-      if (!changed.length) return;
-      const res = await Promise.all(changed.map(x => SB().from('store_collections').update({ sort_order: x[1] }).eq('id', x[0])));
-      if (res.some(r => r.error)) { toast('Could not save the order'); await loadCols(); if (st.tab === 'collections') main.innerHTML = collectionsHtml(); return; }
-      queuePublish(); toast('Order saved');
+      const jobs = changed.map(x => SB().from('store_collections').update({ sort_order: x[1] }).eq('id', x[0]));
+      if (newParents) jobs.push(SB().from('store_collections').update({ parent_ids: newParents, parent_id: newParents[0] || null }).eq('id', id));
+      if (!jobs.length) return;
+      const res = await Promise.all(jobs);
+      if (res.some(r => r.error)) { toast('Could not save the change'); await loadCols(); if (st.tab === 'collections') main.innerHTML = collectionsHtml(); return; }
+      queuePublish(); toast(newParents ? 'Moved' : 'Order saved');
+    }
+    // Drop on the top/bottom edge of a row = before/after it (same parent as that row). Drop on the middle = inside it (becomes its sub-collection).
+    function dropCol(d, r, zone) {
+      const tid = r.dataset.opencol, tpar = r.dataset.colpar || '', tlvl = +r.dataset.collvl || 0, me = st.cols.find(c => c.id === d.id); if (!me) return;
+      const into = zone === 'dropinto', newPar = into ? tid : tpar, parLvl = into ? tlvl : tlvl - 1;
+      const under = x => { const seen = new Set(), up = y => { if (!y || seen.has(y)) return false; if (y === d.id) return true; seen.add(y); const c = st.cols.find(z => z.id === y); return !!c && pidsOf(c).some(up); }; return up(x); };
+      if (newPar && under(newPar)) { toast("A collection can't go inside itself or its own sub-collections"); return; }
+      const h = (c, n) => (n > 4 || !kids(c.id).length) ? 0 : 1 + Math.max.apply(null, kids(c.id).map(k => h(k, n + 1)));
+      if (parLvl + 1 + h(me, 0) > 3) { toast('Too many levels (the maximum is 4)'); return; }
+      const cur = pidsOf(me).filter(p => p !== d.par), next = newPar && !cur.includes(newPar) ? cur.concat(newPar) : cur;
+      const changed = next.slice().sort().join('|') !== pidsOf(me).slice().sort().join('|');
+      if (newPar && st.colFold && st.colFold.has(newPar)) { st.colFold.delete(newPar); saveFold(); }
+      reorderCols(d.id, newPar, into ? null : tid, zone === 'dropafter', 0, changed ? next : undefined);
     }
     function collectionEditorHtml() {
       const cd = st.cd, f = cd.f, i = (k, max, type) => '<input data-c="' + k + '" type="' + (type || 'text') + '" value="' + E(f[k]) + '"' + (max ? ' data-max="' + max + '"' : '') + ' dir="' + (/_en$|^title_en/.test(k) ? 'ltr' : /^(title|description|seo_title|seo_description)$/.test(k) ? 'rtl' : 'auto') + '">';
@@ -9715,7 +9740,7 @@ ${invoiceFootHtml('')}`;
         const j = await r.json().catch(() => ({}));
         if (!r.ok || !j.ok) { if (!quiet) aiSay(j.error === 'too_soon' ? 'Already sent a moment ago. Try again in ' + j.wait_minutes + ' minute(s).' : 'Could not notify the search engines: ' + (j.detail || j.error || ('error ' + r.status)), true); }
         else if (!quiet) aiSay('Sent ' + j.urls + ' page address' + (j.urls === 1 ? '' : 'es') + ' to Bing and the other IndexNow search engines. Google learns about you from your sitemap and Merchant Center feed (see Marketing \u2192 Search & AI).', false);
-      } catch (e) { if (!quiet) aiSay('The website did not answer.', true); }
+      } catch (e) { if (!quiet) aiSay('The website did not answer. Make sure seo-ping.js was uploaded to the same api folder as ai-seo.js and the deploy finished, then try again.', true); }
       pingBusy = false;
     }
     function profileCard(pf) {
@@ -9897,6 +9922,7 @@ ${invoiceFootHtml('')}`;
       const sl = t.dataset; if (sl.slup !== undefined || sl.sldn !== undefined || sl.sldel !== undefined) { const s = st.app.hero.slides, n = +(sl.slup ?? sl.sldn ?? sl.sldel); if (sl.sldel !== undefined) s.splice(n, 1); else { const m = sl.slup !== undefined ? n - 1 : n + 1; if (m >= 0 && m < s.length) { const x = s[n]; s[n] = s[m]; s[m] = x; } } main.innerHTML = appearanceHtml(); return; }
       if (sl.slimg) { st.slTarget = sl.slimg; $('saSlFile').click(); return; }
       const mp = t.closest('[data-mergepick]'); if (mp && st.ed) { await mergeInto(mp.dataset.mergepick); return; }
+      const cf = t.closest('[data-colfold]'); if (cf) { const id = cf.dataset.colfold, f = st.colFold || (st.colFold = loadFold()); if (f.has(id)) f.delete(id); else f.add(id); saveFold(); main.innerHTML = collectionsHtml(); return; }
       const cm = t.closest('[data-colmv]'); if (cm) { const q2 = cm.dataset.colmv.split('|'), rw = cm.closest('[data-opencol]'); await reorderCols(q2[0], rw ? (rw.dataset.colpar || '') : '', null, false, +q2[1]); return; }
       if (t.closest('.sa-grip')) return;
       const oc = t.closest('[data-opencol]'); if (oc) { openCollection(oc.dataset.opencol); return; }
@@ -9914,6 +9940,8 @@ ${invoiceFootHtml('')}`;
       else if (a === 'ship') window.openShipZones();
       else if (a === 'new') openEditor('__new__');
       else if (a === 'newcol') openCollection('');
+      else if (a === 'colfold') { st.colFold = new Set(st.cols.filter(c => kids(c.id).length).map(c => c.id)); saveFold(); main.innerHTML = collectionsHtml(); }
+      else if (a === 'colunfold') { st.colFold = new Set(); saveFold(); main.innerHTML = collectionsHtml(); }
       else if (a === 'cancel') { st.ed = null; st.dd = null; st.cd = null; st.imp = null; renderModal(); }
       else if (a === 'addvar') { const used = new Set(st.products.map(x => String(x.sku || '').trim().toLowerCase()).concat(st.ed.variants.map(x => String(x.sku || '').trim().toLowerCase())));
         const base = String((st.ed.variants[0] || {}).sku || '').trim(); let n = st.ed.variants.length + 1, sku = '';
@@ -10024,10 +10052,11 @@ ${invoiceFootHtml('')}`;
       else if (t.dataset.m !== undefined && st.mk) { const p = t.dataset.m.split('.'); if (p.length === 2) st.mk[p[0]][p[1]] = t.value; else st.mk[p[0]] = t.value; }
       else if (t.dataset.u !== undefined) { st.utm[t.dataset.u] = t.value; const o = $('saUtmOut'); if (o) o.textContent = utmLink(); }
     });
-    let dragCol = null; const clearDrop = () => root.querySelectorAll('.dragging,.dropbefore,.dropafter').forEach(x => x.classList.remove('dragging', 'dropbefore', 'dropafter'));
+    let dragCol = null; const DZ = ['dropbefore', 'dropafter', 'dropinto'], clearDrop = () => root.querySelectorAll('.dragging,.dropbefore,.dropafter,.dropinto').forEach(x => x.classList.remove('dragging', 'dropbefore', 'dropafter', 'dropinto'));
+    const zoneOf = (e, r) => { const bx = r.getBoundingClientRect(), y = (e.clientY - bx.top) / bx.height; return y < 0.28 ? 'dropbefore' : y > 0.72 ? 'dropafter' : 'dropinto'; };
     root.addEventListener('dragstart', e => { const r = e.target.closest && e.target.closest('[data-opencol][draggable="true"]'); if (!r) return; dragCol = { id: r.dataset.opencol, par: r.dataset.colpar || '' }; r.classList.add('dragging'); try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragCol.id); } catch (x) { /* ignore */ } });
-    root.addEventListener('dragover', e => { if (!dragCol) return; const r = e.target.closest && e.target.closest('[data-opencol]'); if (!r || r.dataset.opencol === dragCol.id || (r.dataset.colpar || '') !== dragCol.par) return; e.preventDefault(); root.querySelectorAll('.dropbefore,.dropafter').forEach(x => x.classList.remove('dropbefore', 'dropafter')); const b = r.getBoundingClientRect(); r.classList.add(e.clientY > b.top + b.height / 2 ? 'dropafter' : 'dropbefore'); });
-    root.addEventListener('drop', e => { if (!dragCol) return; const r = e.target.closest && e.target.closest('[data-opencol]'); if (!r || r.dataset.opencol === dragCol.id || (r.dataset.colpar || '') !== dragCol.par) { clearDrop(); dragCol = null; return; } e.preventDefault(); const after = r.classList.contains('dropafter'), d = dragCol; clearDrop(); dragCol = null; reorderCols(d.id, d.par, r.dataset.opencol, after); });
+    root.addEventListener('dragover', e => { if (!dragCol) return; const r = e.target.closest && e.target.closest('[data-opencol]'); if (!r || r.dataset.opencol === dragCol.id) return; e.preventDefault(); root.querySelectorAll('.dropbefore,.dropafter,.dropinto').forEach(x => x.classList.remove('dropbefore', 'dropafter', 'dropinto')); r.classList.add(zoneOf(e, r)); });
+    root.addEventListener('drop', e => { if (!dragCol) return; const r = e.target.closest && e.target.closest('[data-opencol]'); if (!r || r.dataset.opencol === dragCol.id) { clearDrop(); dragCol = null; return; } e.preventDefault(); const zone = DZ.find(z => r.classList.contains(z)) || zoneOf(e, r), d = dragCol; clearDrop(); dragCol = null; dropCol(d, r, zone); });
     root.addEventListener('dragend', () => { clearDrop(); dragCol = null; });
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && !root.hidden) { if (st.ed || st.dd || st.cd || st.imp) { st.ed = st.dd = st.cd = st.imp = null; renderModal(); } else root.hidden = true; } });
   })();
