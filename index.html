@@ -8427,7 +8427,8 @@ ${invoiceFootHtml('')}`;
     .sa-help{border:1px solid var(--line);border-radius:12px;background:var(--panel);margin:8px 0 14px}.sa-help summary{cursor:pointer;font-weight:800;font-size:13px;padding:10px 14px}.sa-hbody{padding:2px 16px 12px;font-size:13px;line-height:1.55;color:var(--cream-dim)}.sa-hbody p{margin:8px 0}.sa-hbody b{color:var(--cream)}
     .sa-code{font-family:monospace;font-size:12px;background:var(--panel-2);padding:6px 8px;border-radius:8px;word-break:break-all;display:block;margin:4px 0}
     .sa-tbl{width:100%;border-collapse:collapse;font-size:13px}.sa-tbl td,.sa-tbl th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
-    @media(max-width:700px){.sa-g2,.sa-g3{grid-template-columns:1fr}.sa-var{grid-template-columns:1fr 1fr}}
+    .sa-f{display:flex;flex-direction:column;gap:3px;min-width:0}.sa-f input,.sa-f select{width:100%;min-width:0}.sa-f .sa-s{padding:10px 0}
+    @media(max-width:700px){.sa-g2,.sa-g3{grid-template-columns:1fr}.sa-var{grid-template-columns:1fr 1fr;gap:10px 8px}.sa-var .sa-w{grid-column:1/-1}.sa-var .h{font-size:12px}.sa-var input,.sa-var select{font-size:16px}.sa-var .sa-x{align-items:flex-start}.sa-opt{padding:12px}.sa-optn{font-size:14px}}
     @media(max-width:700px){
       .sa-hd{padding:8px 12px;gap:8px 10px}
       .sa-hd>b{order:1;font-size:16px}
@@ -8928,11 +8929,17 @@ ${invoiceFootHtml('')}`;
         '<div class="sa-sec">Options — what the customer chooses between (size, weight, colour…)</div><div class="sa-note">Name the choice once, then add one line per option. <b>Each option has its own price, weight and picture.</b> Example: name “Size”, options 250 g / 500 g / 1 kg with their own prices and weights. The weight (kg) is what the shipping price is calculated from.</div>' +
         '<div class="sa-g2"><div><label>Option name — what the customer chooses (e.g. Size, Weight, Colour)</label>' + f('option1_name') + '</div><div><label>Second option name (optional, e.g. Colour)</label>' + f('option2_name') + '</div></div>' +
         (() => { const avail = Array.from(new Set(ed.images.concat(ed.variants.map(x => x.variant_image).filter(Boolean))));
-          return ed.variants.map((v, i) => '<div class="sa-opt"><div class="sa-optn">Option ' + (i + 1) + (v.option1_value ? ' — ' + E(v.option1_value) : '') + '</div>' +
-            '<div class="sa-var"><span class="h">SKU</span><span class="h">Value 1</span><span class="h">Value 2</span><span class="h">Sale price</span><span class="h">Price before discount</span><span class="h">Weight (kg)</span><span class="h">Stock display</span><span class="h">Real stock</span><span></span>' +
-            '<input data-v="' + i + '.sku" value="' + E(v.sku) + '"' + (v.id ? ' readonly' : '') + '><input data-v="' + i + '.option1_value" value="' + E(v.option1_value) + '" placeholder="e.g. 250 g"><input data-v="' + i + '.option2_value" value="' + E(v.option2_value) + '">' +
-            '<input data-v="' + i + '.sale_price" type="text" inputmode="decimal" value="' + E(v.sale_price) + '"><input data-v="' + i + '.regular_price" type="text" inputmode="decimal" value="' + E(v.regular_price) + '"><input data-v="' + i + '.weight" type="text" inputmode="decimal" value="' + E(v.weight) + '" placeholder="0.25">' + modeSel(i, v.store_stock_mode) +
-            '<span class="sa-s">' + (v.id ? E(v.balance) : '—') + '</span>' + (v.id ? (ed.variants.length > 1 ? '<button class="sa-btn dan" data-delvar="' + i + '" title="Delete this option">×</button>' : '<span></span>') : '<button class="sa-btn dan" data-rmvar="' + i + '">×</button>') + '</div>' +
+          return '<div class="sa-note"><b>Sale price</b> = what the customer pays. <b>Price before discount</b> = the old price shown crossed out (leave empty if there is no discount).</div>' + ed.variants.map((v, i) => '<div class="sa-opt"><div class="sa-optn">Option ' + (i + 1) + (v.option1_value ? ' — ' + E(v.option1_value) : '') + '</div>' +
+            '<div class="sa-var">' +
+            '<div class="sa-f sa-w"><span class="h">SKU</span><input data-v="' + i + '.sku" value="' + E(v.sku) + '"' + (v.id ? ' readonly' : '') + '></div>' +
+            '<div class="sa-f"><span class="h">Value 1</span><input data-v="' + i + '.option1_value" value="' + E(v.option1_value) + '" placeholder="e.g. 250 g"></div>' +
+            '<div class="sa-f"><span class="h">Value 2</span><input data-v="' + i + '.option2_value" value="' + E(v.option2_value) + '"></div>' +
+            '<div class="sa-f"><span class="h">Sale price</span><input data-v="' + i + '.sale_price" type="text" inputmode="decimal" value="' + E(v.sale_price) + '"></div>' +
+            '<div class="sa-f"><span class="h">Price before discount</span><input data-v="' + i + '.regular_price" type="text" inputmode="decimal" value="' + E(v.regular_price) + '"></div>' +
+            '<div class="sa-f"><span class="h">Weight (kg)</span><input data-v="' + i + '.weight" type="text" inputmode="decimal" value="' + E(v.weight) + '" placeholder="0.25"></div>' +
+            '<div class="sa-f"><span class="h">Stock display</span>' + modeSel(i, v.store_stock_mode) + '</div>' +
+            '<div class="sa-f"><span class="h">Real stock</span><span class="sa-s">' + (v.id ? E(v.balance) : '—') + '</span></div>' +
+            '<div class="sa-f sa-x"><span class="h">&nbsp;</span>' + (v.id ? (ed.variants.length > 1 ? '<button class="sa-btn dan" data-delvar="' + i + '" title="Delete this option">×</button>' : '<span></span>') : '<button class="sa-btn dan" data-rmvar="' + i + '">×</button>') + '</div></div>' +
             '<div class="sa-oimg"><span class="sa-s">Picture for this option:</span><i class="sa-oi' + (!v.variant_image ? ' on' : '') + '" data-vimg="' + i + '|" title="Use the main picture">main</i>' +
             avail.map(u => '<img class="sa-oi' + (v.variant_image === u ? ' on' : '') + '" src="' + E(u) + '" alt="" data-vimg="' + i + '|' + E(u) + '">').join('') +
             '<button class="sa-btn" data-vup="' + i + '">' + (v.variant_image ? 'Replace picture' : '+ Upload') + '</button>' + (v.variant_image ? '<button class="sa-btn dan" data-vimgrm="' + i + '">Remove picture</button>' : '') + '</div></div>').join(''); })() +
