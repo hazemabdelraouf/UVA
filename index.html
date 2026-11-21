@@ -8109,13 +8109,20 @@ ${invoiceFootHtml('')}`;
 
   // ===== Governorates / cities live in their own tables (sql/09_store_geo.sql). The ENGLISH name is the key that orders and shipping zones use. =====
   const GEO_DB = { govs: [], cities: [], ok: false };
-  window.loadGeoFromDb = async function(){
+  window.loadGeoFromDb = async function(force){
     if(!window.sb) return false;
     try{
-      const [g, c] = await Promise.all([
-        window.sb.from('store_geo_govs').select('*').order('sort_order').order('name_en'),
-        window.sb.from('store_geo_cities').select('*').order('sort_order').order('name_en')
-      ]);
+      // The governorate/city tables are big and almost never change: keep them 12 hours in this browser (a tab switch used to download them again every time).
+      let g, c, hit = null;
+      if(!force){ try{ const j = JSON.parse(localStorage.getItem('uva_geo_cache') || 'null'); if(j && Date.now() - j.t < 43200000 && Array.isArray(j.g) && Array.isArray(j.c)) hit = j; }catch(e){} }
+      if(hit){ g = { data: hit.g }; c = { data: hit.c }; }
+      else {
+        [g, c] = await Promise.all([
+          window.sb.from('store_geo_govs').select('*').order('sort_order').order('name_en'),
+          window.sb.from('store_geo_cities').select('*').order('sort_order').order('name_en')
+        ]);
+        if(!g.error && !c.error){ try{ localStorage.setItem('uva_geo_cache', JSON.stringify({ t: Date.now(), g: g.data || [], c: c.data || [] })); }catch(e){} }
+      }
       if(g.error || c.error) throw (g.error || c.error);
       GEO_DB.govs = g.data || []; GEO_DB.cities = c.data || []; GEO_DB.ok = true;
       if(GEO_DB.govs.length){                       // dropdowns (new order, edit order, shipping zones) follow the tables
@@ -8566,7 +8573,7 @@ ${invoiceFootHtml('')}`;
           : '<div class="sa-note" style="margin-top:8px">Choose a governorate (or press the number in its row) to see and edit its cities.</div>') + '</div>';
     }
     async function glAfter(text) {
-      glNote(text); await window.loadGeoFromDb(); if (st.tab === 'locations') main.innerHTML = tabHtml(); queuePublish();
+      glNote(text); await window.loadGeoFromDb(true); if (st.tab === 'locations') main.innerHTML = tabHtml(); queuePublish();
     }
     async function glSave(id) {
       const k = id.split(':')[0], rid = id.slice(2), rows = k === 'g' ? GEO_DB.govs : GEO_DB.cities, dr = st.gl.draft[id] || {};
