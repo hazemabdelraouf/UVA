@@ -8409,9 +8409,7 @@ ${invoiceFootHtml('')}`;
     .sa-im.first{border-color:var(--sage)}.sa-im img{width:100%;height:100%;object-fit:cover}
     .sa-im b{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.65);color:#fff;border-radius:6px;width:22px;height:22px;text-align:center;line-height:22px;cursor:pointer;font-size:13px}
     .sa-im i{position:absolute;bottom:2px;left:2px;background:rgba(0,0,0,.65);color:#fff;border-radius:6px;padding:0 6px;font-size:11px;font-style:normal;cursor:pointer}
-    .sa-var{display:grid;grid-template-columns:1.2fr 1fr 1fr .9fr .9fr .8fr 1.1fr .6fr;gap:6px;align-items:end;margin-bottom:6px}
-    .sa-optn{display:flex;align-items:center;justify-content:space-between;gap:8px}.sa-optdel{border:1px solid var(--line);background:transparent;color:var(--rust);border-radius:8px;padding:3px 10px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
-    .sa-oiw{position:relative;display:inline-block;width:44px;height:44px;flex:none}.sa-oiw .sa-oi{display:block}.sa-oiw b{position:absolute;top:-6px;right:-6px;width:18px;height:18px;line-height:18px;text-align:center;border-radius:50%;background:rgba(0,0,0,.75);color:#fff;font-size:12px;cursor:pointer}
+    .sa-var{display:grid;grid-template-columns:1.2fr 1fr 1fr .9fr .9fr .8fr 1.1fr .6fr auto;gap:6px;align-items:end;margin-bottom:6px}
     .sa-opt{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0;background:rgba(127,127,127,.04)}.sa-optn{font-weight:800;font-size:13px;margin-bottom:6px}
     .sa-oimg{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px}.sa-oi{width:44px;height:44px;border-radius:8px;object-fit:cover;border:2px solid transparent;cursor:pointer;opacity:.7;box-sizing:border-box}.sa-oi.on{border-color:var(--gold);opacity:1}
     i.sa-oi{display:grid;place-items:center;font-size:10px;font-style:normal;background:rgba(127,127,127,.18);color:var(--cream)}.sa-var .h{font-size:11px;color:var(--cream-dim);font-weight:700}
@@ -8429,8 +8427,7 @@ ${invoiceFootHtml('')}`;
     .sa-help{border:1px solid var(--line);border-radius:12px;background:var(--panel);margin:8px 0 14px}.sa-help summary{cursor:pointer;font-weight:800;font-size:13px;padding:10px 14px}.sa-hbody{padding:2px 16px 12px;font-size:13px;line-height:1.55;color:var(--cream-dim)}.sa-hbody p{margin:8px 0}.sa-hbody b{color:var(--cream)}
     .sa-code{font-family:monospace;font-size:12px;background:var(--panel-2);padding:6px 8px;border-radius:8px;word-break:break-all;display:block;margin:4px 0}
     .sa-tbl{width:100%;border-collapse:collapse;font-size:13px}.sa-tbl td,.sa-tbl th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
-    .sa-f{display:flex;flex-direction:column;gap:3px;min-width:0}.sa-f input,.sa-f select{width:100%;min-width:0}.sa-f .sa-s{padding:10px 0}
-    @media(max-width:700px){.sa-g2,.sa-g3{grid-template-columns:1fr}.sa-var{grid-template-columns:1fr 1fr;gap:10px 8px}.sa-var .sa-w{grid-column:1/-1}.sa-var .h{font-size:12px}.sa-var input,.sa-var select{font-size:16px}.sa-var .sa-x{align-items:flex-start}.sa-opt{padding:12px}.sa-optn{font-size:14px}}
+    @media(max-width:700px){.sa-g2,.sa-g3{grid-template-columns:1fr}.sa-var{grid-template-columns:1fr 1fr}}
     @media(max-width:700px){
       .sa-hd{padding:8px 12px;gap:8px 10px}
       .sa-hd>b{order:1;font-size:16px}
@@ -8810,15 +8807,7 @@ ${invoiceFootHtml('')}`;
       renderModal();
       if (st.tab === 'integrations') loadEvents();
     }
-    function renderModal() {
-      // keep the scroll position when the same window is redrawn (deleting a picture/option must not jump back to the top)
-      const kind = st.ed ? 'ed' : st.cd ? 'cd' : st.dd ? 'dd' : st.imp ? 'imp' : '';
-      const old = modal.querySelector('.sa-mod'), keep = (old && modal.dataset.kind === kind) ? old.scrollTop : null;
-      modal.innerHTML = st.ed ? editorHtml() : st.cd ? collectionEditorHtml() : st.dd ? discountFormHtml() : st.imp ? importHtml() : '';
-      modal.dataset.kind = kind;
-      if (keep != null) { const m = modal.querySelector('.sa-mod'); if (m) m.scrollTop = keep; }
-      updateCounters();
-    }
+    function renderModal() { modal.innerHTML = st.ed ? editorHtml() : st.cd ? collectionEditorHtml() : st.dd ? discountFormHtml() : st.imp ? importHtml() : ''; updateCounters(); }
     function updateCounters() { root.querySelectorAll('[data-max]').forEach(el => { const c = el.parentElement.querySelector('.sa-cnt'); if (c) { const n = el.value.length; c.textContent = n + '/' + el.dataset.max; c.classList.toggle('bad', n > +el.dataset.max); } }); }
     const cnt = (label, html, max) => '<label>' + label + (max ? '<span class="sa-cnt"></span>' : '') + '</label>' + html;
 
@@ -8939,20 +8928,14 @@ ${invoiceFootHtml('')}`;
         '<div class="sa-sec">Options — what the customer chooses between (size, weight, colour…)</div><div class="sa-note">Name the choice once, then add one line per option. <b>Each option has its own price, weight and picture.</b> Example: name “Size”, options 250 g / 500 g / 1 kg with their own prices and weights. The weight (kg) is what the shipping price is calculated from.</div>' +
         '<div class="sa-g2"><div><label>Option name — what the customer chooses (e.g. Size, Weight, Colour)</label>' + f('option1_name') + '</div><div><label>Second option name (optional, e.g. Colour)</label>' + f('option2_name') + '</div></div>' +
         (() => { const avail = Array.from(new Set(ed.images.concat(ed.variants.map(x => x.variant_image).filter(Boolean))));
-          return '<div class="sa-note"><b>Sale price</b> = what the customer pays. <b>Price before discount</b> = the old price shown crossed out (leave empty if there is no discount).</div>' + ed.variants.map((v, i) => '<div class="sa-opt"><div class="sa-optn"><span>Option ' + (i + 1) + (v.option1_value ? ' — ' + E(v.option1_value) : '') + '</span>' + (v.id ? (ed.variants.length > 1 ? '<button class="sa-optdel" data-delvar="' + i + '" title="Delete this option">Delete option</button>' : '') : '<button class="sa-optdel" data-rmvar="' + i + '" title="Remove this option">Delete option</button>') + '</div>' +
-            '<div class="sa-var">' +
-            '<div class="sa-f sa-w"><span class="h">SKU</span><input data-v="' + i + '.sku" value="' + E(v.sku) + '"' + (v.id ? ' readonly' : '') + '></div>' +
-            '<div class="sa-f"><span class="h">Value 1</span><input data-v="' + i + '.option1_value" value="' + E(v.option1_value) + '" placeholder="e.g. 250 g"></div>' +
-            '<div class="sa-f"><span class="h">Value 2</span><input data-v="' + i + '.option2_value" value="' + E(v.option2_value) + '"></div>' +
-            '<div class="sa-f"><span class="h">Sale price</span><input data-v="' + i + '.sale_price" type="text" inputmode="decimal" value="' + E(v.sale_price) + '"></div>' +
-            '<div class="sa-f"><span class="h">Price before discount</span><input data-v="' + i + '.regular_price" type="text" inputmode="decimal" value="' + E(v.regular_price) + '"></div>' +
-            '<div class="sa-f"><span class="h">Weight (kg)</span><input data-v="' + i + '.weight" type="text" inputmode="decimal" value="' + E(v.weight) + '" placeholder="0.25"></div>' +
-            '<div class="sa-f"><span class="h">Stock display</span>' + modeSel(i, v.store_stock_mode) + '</div>' +
-            '<div class="sa-f"><span class="h">Real stock</span><span class="sa-s">' + (v.id ? E(v.balance) : '—') + '</span></div>' +
-            '</div>' +
+          return ed.variants.map((v, i) => '<div class="sa-opt"><div class="sa-optn">Option ' + (i + 1) + (v.option1_value ? ' — ' + E(v.option1_value) : '') + '</div>' +
+            '<div class="sa-var"><span class="h">SKU</span><span class="h">Value 1</span><span class="h">Value 2</span><span class="h">Sale price</span><span class="h">Price before discount</span><span class="h">Weight (kg)</span><span class="h">Stock display</span><span class="h">Real stock</span><span></span>' +
+            '<input data-v="' + i + '.sku" value="' + E(v.sku) + '"' + (v.id ? ' readonly' : '') + '><input data-v="' + i + '.option1_value" value="' + E(v.option1_value) + '" placeholder="e.g. 250 g"><input data-v="' + i + '.option2_value" value="' + E(v.option2_value) + '">' +
+            '<input data-v="' + i + '.sale_price" type="text" inputmode="decimal" value="' + E(v.sale_price) + '"><input data-v="' + i + '.regular_price" type="text" inputmode="decimal" value="' + E(v.regular_price) + '"><input data-v="' + i + '.weight" type="text" inputmode="decimal" value="' + E(v.weight) + '" placeholder="0.25">' + modeSel(i, v.store_stock_mode) +
+            '<span class="sa-s">' + (v.id ? E(v.balance) : '—') + '</span>' + (v.id ? (ed.variants.length > 1 ? '<button class="sa-btn dan" data-delvar="' + i + '" title="Delete this option">×</button>' : '<span></span>') : '<button class="sa-btn dan" data-rmvar="' + i + '">×</button>') + '</div>' +
             '<div class="sa-oimg"><span class="sa-s">Picture for this option:</span><i class="sa-oi' + (!v.variant_image ? ' on' : '') + '" data-vimg="' + i + '|" title="Use the main picture">main</i>' +
-            avail.map(u => v.variant_image === u ? '<span class="sa-oiw"><img class="sa-oi on" src="' + E(u) + '" alt="" data-vimg="' + i + '|' + E(u) + '"><b data-vimgrm="' + i + '" title="Remove picture">×</b></span>' : '<img class="sa-oi" src="' + E(u) + '" alt="" data-vimg="' + i + '|' + E(u) + '">').join('') +
-            '<button class="sa-btn" data-vup="' + i + '">' + (v.variant_image ? 'Replace picture' : '+ Upload') + '</button>' + '</div></div>').join(''); })() +
+            avail.map(u => '<img class="sa-oi' + (v.variant_image === u ? ' on' : '') + '" src="' + E(u) + '" alt="" data-vimg="' + i + '|' + E(u) + '">').join('') +
+            '<button class="sa-btn" data-vup="' + i + '">' + (v.variant_image ? 'Replace picture' : '+ Upload') + '</button>' + (v.variant_image ? '<button class="sa-btn dan" data-vimgrm="' + i + '">Remove picture</button>' : '') + '</div></div>').join(''); })() +
         '<input type="file" id="saVFile" accept="image/*" hidden>' +
         '<button class="sa-btn" data-act="addvar">+ Add option</button>' + (ed.isNew ? '' : '<button class="sa-btn" data-act="mergeopen">Merge another product into this one…</button>') +
         (ed.merge ? '<div class="sa-opt"><div class="sa-s">Pick the product that should become an option of this one (it takes this product\'s name, description and pictures; its own picture stays on its option). Unsaved changes in this window are lost.</div><input data-mergeq placeholder="Search by name or SKU" value="' + E(ed.mergeQ || '') + '"><div id="saMergeList">' + mergeListHtml() + '</div></div>' : '') + '<div class="sa-note">Cost and real quantity are edited in Inventory, never here, and customers never see them.</div>' +
@@ -8974,13 +8957,13 @@ ${invoiceFootHtml('')}`;
       const bmp = await decodeImage(file), w = bmp.width || bmp.naturalWidth, h = bmp.height || bmp.naturalHeight, k = Math.min(1, max / Math.max(w, h));
       const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
       c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height); if (bmp.close) bmp.close();
-      const toBlob = type => new Promise(res => c.toBlob(res, type, 0.85));
+      const toBlob = type => new Promise(res => c.toBlob(res, type, 0.8));
       let out = await toBlob('image/webp'); if (!out || !/webp/.test(out.type)) { const j = await toBlob('image/jpeg'); if (j) out = j; }   // some browsers cannot write WebP
       if (!out) throw new Error('the browser could not convert the picture');
       return out;
     }
     async function uploadOne(file, folder, max) {
-      const blob = await toWebp(file, max || 1600), ext = /webp/.test(blob.type) ? 'webp' : (/png/.test(blob.type) ? 'png' : 'jpg');
+      const blob = await toWebp(file, max || 1100), ext = /webp/.test(blob.type) ? 'webp' : (/png/.test(blob.type) ? 'png' : 'jpg');
       const path = folder + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 7) + '.' + ext, pub = () => SB().storage.from('store-media').getPublicUrl(path).data.publicUrl;
       let last;
       for (let n = 0; n < 3; n++) {                                          // a weak connection should not lose a picture
@@ -8999,7 +8982,7 @@ ${invoiceFootHtml('')}`;
       const folder = 'products/' + (String((ed.variants[0] || {}).sku || 'new').toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'new');
       ed.uploading = (ed.uploading || 0) + 1; renderModal();
       for (let i = 0; i < list.length; i++) {
-        try { say('Uploading ' + (i + 1) + ' of ' + list.length + ': ' + list[i].name + '\u2026'); ed.images.push(await uploadOne(list[i], folder, 1600)); ok++; }
+        try { say('Uploading ' + (i + 1) + ' of ' + list.length + ': ' + list[i].name + '\u2026'); ed.images.push(await uploadOne(list[i], folder, 1100)); ok++; }
         catch (e) { failed.push(list[i].name + ' \u2014 ' + (e.message || e)); }
       }
       ed.uploading--; if (st.ed !== ed) { toast(ok + ' picture(s) uploaded'); return; }
@@ -9544,11 +9527,13 @@ ${invoiceFootHtml('')}`;
     const pct = (a, b) => (b > 0 ? (Math.round(a * 1000 / b) / 10) + '%' : '—');
     const ago = ts => { const s = Math.max(0, Math.round((Date.now() - new Date(ts).getTime()) / 1000)); return s < 90 ? 'just now' : s < 3600 ? Math.round(s / 60) + ' min ago' : s < 172800 ? Math.round(s / 3600) + ' h ago' : Math.round(s / 86400) + ' days ago'; };
     const dec = s => { try { return decodeURIComponent(s || ''); } catch (e) { return s || ''; } };
-    async function loadOverview() {
-      if (root.hidden || st.tab !== 'overview') { clearInterval(ovTimer); ovTimer = null; return; }
-      const r = await SB().rpc('store_admin_overview');
+    // Overview = ONE call (plus a tiny count). No polling: it loads when you open the page, is reused for 3 minutes, and Refresh gets new numbers.
+    async function loadOverview(force) {
+      if (root.hidden || st.tab !== 'overview') return;
+      if (!force && st.ov && !st.ov.error && Date.now() - (st.ovAt || 0) < 180000) { main.innerHTML = tabHtml(); return; }
+      const r = await SB().rpc('store_admin_overview'); st.ovAt = Date.now();
       st.ov = (r.error || (r.data && r.data.error)) ? { error: r.error ? r.error.message : r.data.error } : r.data;
-      await loadPending(); await loadOvExtra();
+      await loadPending(force);
       if (st.tab === 'overview') main.innerHTML = tabHtml();
       syncCartBadge();
     }
@@ -9558,7 +9543,7 @@ ${invoiceFootHtml('')}`;
       const days = o.days || [], today = days.find(d => d.day === cairoToday()) || { visitors: 0, views: 0, carts: 0, checkouts: 0, orders: 0 };
       const card = (n, l) => '<div class="sa-card" style="padding:14px;box-shadow:none;border:1px solid var(--line);text-align:center"><div style="font-size:26px;font-weight:800">' + n + '</div><div class="sa-s">' + l + '</div></div>';
       const stageName = { browse: 'Browsing', cart: 'Has items in cart', checkout: 'At checkout', ordered: 'Ordered' };
-      return '<div class="sa-card" style="max-width:none;box-shadow:none;border:1px solid var(--line);display:flex;gap:18px;align-items:center;flex-wrap:wrap"><div style="font-size:52px;font-weight:800;color:#15803d;line-height:1" id="saOnline">' + E(o.online) + '</div><div><div class="sa-t">Online now</div><div class="sa-s">visitors active in the last 2 minutes · refreshes every 15 seconds</div></div>' +
+      return '<div class="sa-card" style="max-width:none;box-shadow:none;border:1px solid var(--line);display:flex;gap:18px;align-items:center;flex-wrap:wrap"><div style="font-size:52px;font-weight:800;color:#15803d;line-height:1" id="saOnline">' + E(o.online) + '</div><div><div class="sa-t">Online now</div><div class="sa-s">visitors active in the last 2 minutes · updated when you open this page; press Refresh for the latest numbers</div></div><button class="sa-btn" data-act="ov-refresh">Refresh</button>' +
         '<div style="flex:1"></div>' + (st.pending ? '<button class="sa-btn pri" data-tab="carts">' + st.pending + ' abandoned cart' + (st.pending === 1 ? '' : 's') + ' not contacted yet →</button>' : '<span class="sa-s">No new abandoned carts to contact</span>') + '</div>' +
         '<div class="sa-sec">Today</div><div class="sa-g3" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">' + card(today.visitors, 'Visitors') + card(today.views, 'Page views') + card(today.carts, 'Added to cart') + card(today.checkouts, 'Reached checkout') + card(today.orders, 'Orders') + card(pct(today.orders, today.visitors), 'Conversion') + '</div>' +
         ovExtraHtml() + '<div class="sa-sec">Last 7 days</div><table class="sa-tbl"><tr><th>Day</th><th>Visitors</th><th>Views</th><th>Carts</th><th>Checkouts</th><th>Orders</th><th>Conversion</th></tr>' + (days.length ? days.map(d => '<tr><td>' + E(d.day) + '</td><td>' + d.visitors + '</td><td>' + d.views + '</td><td>' + d.carts + '</td><td>' + d.checkouts + '</td><td>' + d.orders + '</td><td>' + pct(d.orders, d.visitors) + '</td></tr>').join('') : '<tr><td colspan="7" class="sa-s">No visits recorded yet</td></tr>') + '</table>' +
@@ -9566,8 +9551,7 @@ ${invoiceFootHtml('')}`;
         '<div class="sa-sec">On the website right now</div><table class="sa-tbl"><tr><th>Page</th><th>Device</th><th>From</th><th>Cart</th><th>Status</th><th>Visit</th></tr>' + ((o.online_list || []).length ? o.online_list.map(s => '<tr><td>' + E(dec(s.path)) + '</td><td>' + E(s.device || '') + '</td><td>' + E(s.source || '') + '</td><td>' + s.cart_items + '</td><td>' + E(stageName[s.stage] || s.stage) + '</td><td>' + E(ago(s.first_seen).replace(' ago', '')) + ' · ' + s.views + ' pages</td></tr>').join('') : '<tr><td colspan="6" class="sa-s">Nobody right now</td></tr>') + '</table>' +
         '<div class="sa-note" style="margin-top:12px">Your own visits are counted too. Open the website once with <b>?notrack=1</b> at the end of the address on each of your own phones and computers to exclude them. Visitors are counted anonymously (no cookies, no IP address).</div>';
     }
-    function startOverview() { clearInterval(ovTimer); ovTimer = setInterval(loadOverview, 15000); }
-
+    function startOverview() { /* no automatic refreshing: it used to call Supabase every 15 seconds all day */ }
 
     // ============ analytics (any date range) + overview details + "not contacted" badge ============
     const anAddDays = (s, n) => { const d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
@@ -9594,33 +9578,14 @@ ${invoiceFootHtml('')}`;
     const anCard = (n, l, extra) => '<div class="sa-card" style="padding:14px;box-shadow:none;border:1px solid var(--line);text-align:center"><div style="font-size:24px;font-weight:800;overflow-wrap:anywhere">' + n + '</div><div class="sa-s">' + l + '</div>' + (extra || '') + '</div>';
 
     function syncCartBadge() { top.querySelectorAll('[data-tab="carts"]').forEach(b => { b.textContent = 'Abandoned carts' + (st.pending ? ' (' + st.pending + ')' : ''); }); }
-    async function loadPending() {                          // only carts you have NOT contacted (or dismissed) count as news
+    async function loadPending(force) {
+      if (!force && st.pendAt && Date.now() - st.pendAt < 120000) return;   // at most every 2 minutes
+      st.pendAt = Date.now();                          // only carts you have NOT contacted (or dismissed) count as news
       const r = await SB().from('store_carts').select('cart_id', { count: 'exact', head: true }).eq('status', 'open').not('phone', 'is', null).neq('phone', '').not('checkout_started_at', 'is', null).is('contacted_at', null).or('dismissed.is.null,dismissed.eq.false');
       if (!r.error && typeof r.count === 'number') st.pending = r.count;
     }
-    async function loadOvExtra() {                          // most viewed products / pages for the Overview, refreshed once a minute
-      if (st.ovxAt && Date.now() - st.ovxAt < 60000) return;
-      st.ovxAt = Date.now(); const t = cairoToday();
-      const [w, d] = await Promise.all([SB().rpc('store_admin_analytics', { p: { from: anAddDays(t, -6), to: t } }), SB().rpc('store_admin_analytics', { p: { from: t, to: t } })]);
-      const ok = r => r.data && !r.error && !r.data.error;
-      st.ovx = (ok(w) && ok(d)) ? { w: w.data, t: d.data } : { missing: true };
-    }
-    function ovExtraHtml() {
-      const x = st.ovx; if (!x) return '';
-      if (x.missing) return '<div class="sa-note">Most viewed products and pages will appear here after you run <b>sql/12_store_analytics.sql</b> in Supabase and publish the website with the new events.js.</div>';
-      const w = x.w || {}, d = x.t || {}, dt = d.totals || {};
-      const top3 = (arr, name, val) => arr && arr.length ? '<table class="sa-tbl">' + arr.slice(0, 5).map(r => '<tr><td>' + E(name(r)) + '</td><td style="text-align:right;white-space:nowrap">' + val(r) + '</td></tr>').join('') + '</table>' : '<div class="sa-s">No data yet</div>';
-      const box = (title, inner) => '<div class="sa-card" style="max-width:none;padding:12px 14px;box-shadow:none;border:1px solid var(--line)"><div class="sa-t" style="margin-bottom:4px">' + title + '</div>' + inner + '</div>';
-      const tp = (d.top_products || [])[0], tg = (d.top_pages || [])[0];
-      return '<div class="sa-sec">Today in detail</div><div class="sa-g3" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">' + anCard(anEgp(dt.revenue), 'Sales today') + anCard(anNf(dt.cart_adds), 'Add-to-cart clicks') +
-        anCard(tp ? E(anProdName(tp.slug)) : '—', 'Most viewed product' + (tp ? ' · ' + anNf(tp.views) + ' views' : '')) + anCard(tg ? E(anPage(tg.path)) : '—', 'Most viewed page' + (tg ? ' · ' + anNf(tg.views) + ' views' : '')) + '</div>' +
-        '<div class="sa-sec">Visitors today by source and ad</div><div class="sa-g2">' + box('By source', top3((d.sources || []).slice(0, 5), r => r.source, r => anNf(r.visitors) + ' visitors' + (anNum(r.orders) ? ' · ' + anNf(r.orders) + ' orders' : ''))) +
-        box('By campaign / ad', top3((d.campaigns || []).slice(0, 5), r => [r.source, r.campaign, r.content].filter(Boolean).join(' · '), r => anNf(r.visitors) + ' visitors' + (anNum(r.orders) ? ' · ' + anNf(r.orders) + ' orders' : ''))) + '</div>' +
-        '<div class="sa-sec">Last 7 days — what people look at</div><div class="sa-g2">' +
-        box('Most viewed products', top3(w.top_products, r => anProdName(r.slug), r => anNf(r.views) + ' views')) + box('Most viewed pages', top3(w.top_pages, r => anPage(r.path), r => anNf(r.views) + ' views')) +
-        box('Most added to cart', top3(w.top_added, anItemName, r => anNf(r.qty) + '×')) + box('Best sellers', top3(w.top_sold, anItemName, r => anNf(r.qty) + ' sold')) + '</div>' +
-        '<div style="margin:8px 0"><button class="sa-btn" data-tab="analytics">Open full analytics →</button></div>';
-    }
+    async function loadOvExtra() { /* removed: the two extra analytics calls on every refresh. Details live in the Analytics tab. */ }
+    function ovExtraHtml() { return '<div style="margin:8px 0"><button class="sa-btn" data-tab="analytics">Open full analytics \u2192</button></div>'; }
 
     function analyticsRange() {
       const t = cairoToday(), P = st.anP;
@@ -9633,8 +9598,10 @@ ${invoiceFootHtml('')}`;
       if (P === 'lastmonth') { const end = anAddDays(t.slice(0, 8) + '01', -1); return [end.slice(0, 8) + '01', end]; }
       return [st.anFrom || anAddDays(t, -6), st.anTo || t];
     }
-    async function loadAnalytics() {
-      const rg = analyticsRange(); st.an = { loading: true }; if (st.tab === 'analytics') main.innerHTML = tabHtml();
+    async function loadAnalytics(force) {
+      const rg = analyticsRange(), key = rg.join('|');
+      if (!force && st.an && !st.an.error && !st.an.loading && st.anKey === key && Date.now() - (st.anAt || 0) < 300000) { if (st.tab === 'analytics') main.innerHTML = tabHtml(); return; }   // same range within 5 minutes: reuse
+      st.anKey = key; st.anAt = Date.now(); st.an = { loading: true }; if (st.tab === 'analytics') main.innerHTML = tabHtml();
       const r = await SB().rpc('store_admin_analytics', { p: { from: rg[0], to: rg[1] } });
       st.an = r.error ? { error: r.error.message } : (r.data && r.data.error ? { error: r.data.error } : r.data);
       if (st.tab === 'analytics') main.innerHTML = tabHtml();
@@ -9907,10 +9874,10 @@ ${invoiceFootHtml('')}`;
       if (t.dataset.rmimg !== undefined) { st.ed.images.splice(+t.dataset.rmimg, 1); renderModal(); return; }
       if (t.dataset.firstimg !== undefined) { const u = st.ed.images.splice(+t.dataset.firstimg, 1)[0]; st.ed.images.unshift(u); renderModal(); return; }
       if (t.dataset.vimgrm !== undefined && st.ed) { st.ed.variants[+t.dataset.vimgrm].variant_image = ''; renderModal(); return; }
-      if (t.dataset.vimg !== undefined && st.ed) { const q = t.dataset.vimg.split('|'), vv = st.ed.variants[+q[0]], u = q.slice(1).join('|'); if (!u || vv.variant_image === u) return; vv.variant_image = u; renderModal(); return; }   // tapping never removes a picture: only the small × or Replace does
+      if (t.dataset.vimg !== undefined && st.ed) { const q = t.dataset.vimg.split('|'), vv = st.ed.variants[+q[0]], u = q.slice(1).join('|'); vv.variant_image = (u && vv.variant_image === u) ? '' : u; renderModal(); return; }   // click the chosen picture again = unselect
       if (t.dataset.vup !== undefined && st.ed) { st.vupIdx = +t.dataset.vup; $('saVFile').click(); return; }
       if (t.dataset.delvar !== undefined && st.ed) { await deleteOption(+t.dataset.delvar); return; }
-      if (t.dataset.rmvar !== undefined) { const rv = st.ed.variants[+t.dataset.rmvar]; if (rv && (rv.sku || rv.option1_value || rv.option2_value || rv.sale_price || rv.regular_price || rv.weight) && !confirm('Remove this option?')) return; st.ed.variants.splice(+t.dataset.rmvar, 1); renderModal(); return; }
+      if (t.dataset.rmvar !== undefined) { st.ed.variants.splice(+t.dataset.rmvar, 1); renderModal(); return; }
       if (t.dataset.rmmember !== undefined) { st.cd.remove.push(t.dataset.rmmember); renderModal(); return; }
       const wa = t.closest('[data-wa]'); if (wa) { const c = st.carts.find(x => x.cart_id === wa.dataset.wa); if (c && !c.contacted_at) setTimeout(() => cartUpdate(c.cart_id, { contacted_at: new Date().toISOString() }), 400); return; }
       if (t.dataset.cdone) { await cartUpdate(t.dataset.cdone, { contacted_at: new Date().toISOString() }); return; }
@@ -9948,7 +9915,8 @@ ${invoiceFootHtml('')}`;
       if (open && !act) { openEditor(open.dataset.open); return; }
       if (!act) return;
       const a = act.dataset.act;
-      if (a === 'an-refresh') { st.ovxAt = 0; loadAnalytics(); }
+      if (a === 'an-refresh') { loadAnalytics(true); }
+      else if (a === 'ov-refresh') { loadOverview(true); }
       else if (a === 'ai-run') aiRun();
       else if (a === 'ai-ping') aiPing();
       else if (a === 'ai-apply') aiApply(act.dataset.id);
@@ -10050,16 +10018,16 @@ ${invoiceFootHtml('')}`;
       if (t.dataset.rcol !== undefined) { const row = st.app.sections[+t.dataset.rcol]; if (row && t.value && !(row.cols || []).includes(t.value)) row.cols = (row.cols || []).concat([t.value]); main.innerHTML = appearanceHtml(); return; }
       if (t.id === 'saGlGov') { st.gl.gov = t.value; main.innerHTML = locationsHtml(); return; }
       if (t.id === 'saGlMiss') { st.gl.miss = t.checked; main.innerHTML = locationsHtml(); return; }
-      if (t.id === 'saRowFile' && t.files[0] && st.rowTarget) { const p = st.rowTarget.split('|'); try { st.app.sections[+p[0]][p[1]] = await uploadOne(t.files[0], 'banners', 2400); main.innerHTML = appearanceHtml(); updateCounters(); } catch (x) { toast('Upload failed: ' + (x.message || x)); } t.value = ''; return; }
+      if (t.id === 'saRowFile' && t.files[0] && st.rowTarget) { const p = st.rowTarget.split('|'); try { st.app.sections[+p[0]][p[1]] = await uploadOne(t.files[0], 'banners', 1800); main.innerHTML = appearanceHtml(); updateCounters(); } catch (x) { toast('Upload failed: ' + (x.message || x)); } t.value = ''; return; }
       if (t.id === 'saFile') { uploadImages(t.files); t.value = ''; return; }
       if (t.id === 'saVFile' && t.files[0] && st.ed) {                      // picture for ONE option
         const ed = st.ed, v = ed.variants[st.vupIdx], file = t.files[0], folder = 'products/' + (String((ed.variants[0] || {}).sku || 'new').toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'new'); t.value = '';
         ed.uploading = (ed.uploading || 0) + 1; ed.msg = 'Uploading ' + file.name + '\u2026'; ed.msgErr = false; renderModal();
-        try { v.variant_image = await uploadOne(file, folder, 1600); ed.msg = ''; } catch (x) { ed.msg = 'Picture not uploaded: ' + (x.message || x); ed.msgErr = true; }
+        try { v.variant_image = await uploadOne(file, folder, 1100); ed.msg = ''; } catch (x) { ed.msg = 'Picture not uploaded: ' + (x.message || x); ed.msgErr = true; }
         ed.uploading--; if (st.ed === ed) renderModal(); return;
       }
-      if (t.id === 'saColFile' && t.files[0]) { try { st.cd.f.image = await uploadOne(t.files[0], 'collections', 1400); renderModal(); } catch (x) { st.cd.msg = 'Image upload failed: ' + (x.message || x); renderModal(); } t.value = ''; return; }
-      if (t.id === 'saSlFile' && t.files[0] && st.slTarget) { const p = st.slTarget.split('|'); try { st.app.hero.slides[+p[0]][p[1]] = await uploadOne(t.files[0], 'banners', 2400); main.innerHTML = appearanceHtml(); updateCounters(); } catch (x) { toast('Upload failed: ' + (x.message || x)); } t.value = ''; return; }
+      if (t.id === 'saColFile' && t.files[0]) { try { st.cd.f.image = await uploadOne(t.files[0], 'collections', 900); renderModal(); } catch (x) { st.cd.msg = 'Image upload failed: ' + (x.message || x); renderModal(); } t.value = ''; return; }
+      if (t.id === 'saSlFile' && t.files[0] && st.slTarget) { const p = st.slTarget.split('|'); try { st.app.hero.slides[+p[0]][p[1]] = await uploadOne(t.files[0], 'banners', 1800); main.innerHTML = appearanceHtml(); updateCounters(); } catch (x) { toast('Upload failed: ' + (x.message || x)); } t.value = ''; return; }
       if (t.dataset.f !== undefined && st.ed) st.ed.shared[t.dataset.f] = t.value;
       else if (t.dataset.v !== undefined && st.ed) { const p = t.dataset.v.split('.'); st.ed.variants[+p[0]][p[1]] = t.value; }
       else if (t.dataset.c !== undefined && st.cd) st.cd.f[t.dataset.c] = t.type === 'checkbox' ? t.checked : t.value;
