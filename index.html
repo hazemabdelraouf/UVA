@@ -882,38 +882,88 @@
     margin-top:10px;padding-top:10px;border-top:1px dashed var(--line-strong);
     font-family:'Cairo';font-weight:800;font-size:15px;color:var(--cream);}
   .pi-empty{text-align:center;color:var(--cream-dim);font-size:12.5px;padding:14px 0;}
+  .fs-pair{display:contents;}
+  /* ===== Mobile: every other dialog becomes a bottom sheet ===== */
+  @keyframes sheetUp{from{transform:translateY(28px);opacity:0;}to{transform:none;opacity:1;}}
+  @media (max-width:700px){
+    .modal-overlay:not(.fs-modal){padding:0;align-items:flex-end;}
+    .modal-overlay:not(.fs-modal) .modal-card{max-width:none;width:100%;max-height:92vh;max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;border-radius:22px 22px 0 0;border-width:1px 0 0;padding:22px 16px calc(18px + env(safe-area-inset-bottom));animation:sheetUp .22s ease-out;}
+    .modal-overlay:not(.fs-modal) .modal-card::before{content:"";display:block;width:42px;height:4px;border-radius:4px;background:var(--line-strong);margin:-10px auto 14px;}
+    .modal-overlay:not(.fs-modal) input,.modal-overlay:not(.fs-modal) select,.modal-overlay:not(.fs-modal) textarea,.reschedule-date-input{font-size:16px;}
+    .modal-overlay:not(.fs-modal) .modal-opt-btn{padding:15px;}
+    .modal-overlay:not(.fs-modal) .modal-cancel{padding:12px;width:100%;}
+  }
+  /* ===== Mobile: order / shipping-zone / summary screens ===== */
+  @media (max-width:700px){
+    .fs-modal .fs-pair{display:grid;grid-template-columns:1fr 1fr;gap:0 10px;}
+    .fs-modal .fs-pair .edit-field-group{min-width:0;}
+    .fs-modal .items-editor-add{flex-wrap:wrap;gap:8px;}
+    .fs-modal .items-editor-add input,.fs-modal .items-editor-search-wrap input,.fs-modal .ie-custom-box input{font-size:16px;padding:12px;}
+    .fs-modal .items-editor-add input{width:72px;}
+    #editOrderModal .items-editor-search-wrap{flex:1 1 100%;}
+    #editOrderModal .items-editor-add input{flex:1;width:auto;}
+    #editOrderModal .items-editor-add button{flex:none;padding:12px 22px;}
+    .fs-modal .items-editor-search-wrap{min-width:0;}
+    .fs-modal .items-editor-row{flex-wrap:wrap;gap:8px;padding:10px;align-items:flex-start;}
+    .fs-modal .items-editor-row .ie-name{order:1;flex:1 1 calc(100% - 100px);min-width:0;overflow-wrap:anywhere;font-size:13.5px;}
+    .fs-modal .items-editor-row .ie-remove{order:2;flex:none;width:36px;height:36px;font-size:22px;border-radius:10px;background:var(--panel);border:1px solid var(--line);}
+    .fs-modal .items-editor-row .p-th{order:0;}
+    .fs-modal .items-editor-row .ie-price-wrap{order:3;flex:1 1 40%;align-items:stretch;min-width:0;}
+    .fs-modal .items-editor-row .ie-price{width:100%;font-size:16px;padding:9px 6px;}
+    .fs-modal .items-editor-row .ie-qty{order:3;flex:1 1 40%;width:auto;font-size:16px;padding:9px 6px;min-width:0;}
+    .fs-modal .ie-custom-grid{grid-template-columns:1fr 1fr;}
+    .fs-modal .ie-custom-box button,.fs-modal .ie-custom-toggle{width:100%;padding:12px;}
+    .fs-modal .ie-custom-toggle{text-align:start;padding:10px 2px 0;}
+    .fs-modal .no-sum{font-size:13.5px;}
+    /* shipping zones */
+    .fs-modal .sz-card input,.fs-modal .sz-card select{font-size:16px;padding:11px 10px;}
+    .fs-modal .sz-head{flex-wrap:wrap;}
+    .fs-modal .sz-row{gap:8px;}
+    .fs-modal .sz-row>span:first-child:not(:only-child){flex:1 1 100%;}
+    .fs-modal .sz-row select{flex:1 1 calc(50% - 4px);min-width:0;}
+    .fs-modal .sz-row input{flex:1 1 70px;width:auto;min-width:0;}
+    .fs-modal .sz-btn{padding:11px 16px;}
+    .fs-modal .sz-actions .sz-btn.primary{flex:1;}
+    .fs-modal .modal-card.edit-card.sz-card{max-width:none;}
+  }
   /* purchase modal: action bar + labelled item fields */
   .pi-sbar{display:flex;flex-direction:column-reverse;}
   .pi-sbar .modal-options{margin-top:6px;}
   .pi-f{display:contents;}.pi-fl{display:none;}
-  /* ===== Mobile: New purchase fills the whole screen, Save/Cancel stay visible ===== */
+  /* ===== Mobile: Money forms (purchase, transaction, debt, transfer, settle) fill the whole screen, Save/Cancel stay visible ===== */
   @media (max-width:700px){
-    #purchaseModal{padding:0;align-items:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--panel);backdrop-filter:none;}
-    #purchaseModal .modal-card.edit-card{max-width:none;width:100%;min-height:100%;max-height:none;overflow:visible;border:0;border-radius:0;box-shadow:none;animation:none;padding:16px 14px 0;}
-    #purchaseModal .modal-title{font-size:20px;}
-    #purchaseModal .modal-sub{margin-bottom:14px;}
-    #purchaseModal .edit-field-group{margin-bottom:16px;}
-    #purchaseModal .edit-field-group label{font-size:12px;}
-    #purchaseModal input,#purchaseModal select,#purchaseModal textarea{font-size:16px;}
-    #purchaseModal .edit-field-group input,#purchaseModal .edit-field-group textarea,#purchaseModal .edit-field-group select{padding:12px;}
-    #purchaseModal input[type="datetime-local"]{min-width:0;max-width:100%;}
+    .fs-modal{padding:0;align-items:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--panel);backdrop-filter:none;}
+    .fs-modal .modal-card.edit-card{max-width:none;width:100%;min-height:100%;max-height:none;overflow:visible;border:0;border-radius:0;box-shadow:none;animation:none;padding:16px 14px 0;}
+    .fs-modal .modal-card.edit-card{display:flex;flex-direction:column;}
+    .fs-modal .modal-card.edit-card>*{flex-shrink:0;}
+    .fs-modal .modal-card.edit-card>.edit-field-group:last-of-type{margin-bottom:24px;}
+    .fs-modal .modal-title{font-size:20px;}
+    .fs-modal .modal-sub{margin-bottom:14px;}
+    .fs-modal .edit-field-group{margin-bottom:16px;}
+    .fs-modal .edit-field-group label{font-size:12px;}
+    .fs-modal input,.fs-modal select,.fs-modal textarea{font-size:16px;}
+    .fs-modal .edit-field-group input,.fs-modal .edit-field-group textarea,.fs-modal .edit-field-group select{padding:12px;}
+    .fs-modal input[type="datetime-local"]{min-width:0;max-width:100%;}
     /* add-product row: search on its own line, then qty / cost / Add */
-    #purchaseModal .pi-add-row{gap:8px;}
-    #purchaseModal .pi-add-row .items-editor-search-wrap{flex:1 1 100% !important;min-width:0 !important;}
-    #purchaseModal .pi-add-row input[type="number"]{flex:1 1 0;width:auto !important;min-width:0;padding:12px 8px;text-align:center;}
-    #purchaseModal .pi-add-row .btn{flex:none;width:auto !important;padding:12px 20px !important;}
+    .fs-modal .pi-add-row{gap:8px;}
+    .fs-modal .pi-add-row .items-editor-search-wrap{flex:1 1 100% !important;min-width:0 !important;}
+    .fs-modal .pi-add-row input[type="number"]{flex:1 1 0;width:auto !important;min-width:0;padding:12px 8px;text-align:center;}
+    .fs-modal .pi-add-row .btn{flex:none;width:auto !important;padding:12px 20px !important;align-self:stretch;}
     /* product rows: name + remove on the first line, then labelled Qty / Unit cost / Total */
-    #purchaseModal .pi-row{flex-wrap:wrap;gap:8px;padding:10px;align-items:flex-start;}
-    #purchaseModal .pi-name{order:1;flex:1 1 calc(100% - 46px);min-width:0;overflow-wrap:anywhere;align-self:center;}
-    #purchaseModal .pi-remove{order:2;flex:none;width:36px;height:36px;font-size:22px;border-radius:10px;background:var(--panel);border:1px solid var(--line);}
-    #purchaseModal .pi-f{order:3;display:flex;flex-direction:column;gap:3px;flex:1 1 0;min-width:0;}
-    #purchaseModal .pi-fl{display:block;font-size:11px;font-weight:700;color:var(--cream-dim);}
-    #purchaseModal .pi-qty,#purchaseModal .pi-price{width:100%;padding:10px 6px;border-radius:10px;}
-    #purchaseModal .pi-sub-total{width:auto;text-align:start;display:flex;align-items:center;min-height:44px;font-size:14px;}
+    .fs-modal .pi-row{flex-wrap:wrap;gap:8px;padding:10px;align-items:flex-start;}
+    .fs-modal .pi-name{order:1;flex:1 1 calc(100% - 46px);min-width:0;overflow-wrap:anywhere;align-self:center;}
+    .fs-modal .pi-remove{order:2;flex:none;width:36px;height:36px;font-size:22px;border-radius:10px;background:var(--panel);border:1px solid var(--line);}
+    .fs-modal .pi-f{order:3;display:flex;flex-direction:column;gap:3px;flex:1 1 0;min-width:0;}
+    .fs-modal .pi-fl{display:block;font-size:11px;font-weight:700;color:var(--cream-dim);}
+    .fs-modal .pi-qty,.fs-modal .pi-price{width:100%;padding:10px 6px;border-radius:10px;}
+    .fs-modal .pi-sub-total{width:auto;text-align:start;display:flex;align-items:center;min-height:44px;font-size:14px;}
+    .fs-modal .modal-field-error.show{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom));z-index:7;background:var(--panel);border:1px solid var(--rust);border-radius:10px;padding:9px 11px;margin:8px 0;box-shadow:0 -6px 12px rgba(0,0,0,.06);}
+    .fs-modal .modal-card.edit-card>.modal-sub{text-align:start;}
+    .fs-modal .edit-field-group input[type="checkbox"]{width:22px;height:22px;flex:none;}
     /* sticky bottom bar */
-    #purchaseModal .pi-sbar{position:sticky;bottom:0;z-index:8;flex-direction:row;gap:10px;margin:16px -14px 0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);}
-    #purchaseModal .pi-sbar .modal-cancel{flex:1;margin:0;padding:13px 8px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--cream);font-size:14px;font-weight:700;}
-    #purchaseModal .pi-sbar .modal-options{flex:2;margin:0;}
+    .fs-modal .pi-sbar{position:sticky;bottom:0;z-index:8;flex-direction:row;gap:10px;margin:auto -14px 0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);}
+    .fs-modal .pi-sbar .modal-cancel{flex:1;margin:0;padding:13px 8px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--cream);font-size:14px;font-weight:700;}
+    .fs-modal .pi-sbar .modal-options{flex:2;margin:0;}
   }
 </style>
 </head>
@@ -1225,15 +1275,19 @@
 </div>
 
 <!-- ============ EDIT ORDER MODAL ============ -->
-<div class="modal-overlay" id="editOrderModal">
+<div class="modal-overlay fs-modal" id="editOrderModal">
   <div class="modal-card edit-card">
     <div class="modal-title" id="editOrderModalTitle">Edit order</div>
     <div class="modal-sub">Update the fields below, then save.</div>
     <div class="edit-field-group"><label>Customer name</label><input type="text" data-field="Customer Name"></div>
+    <div class="fs-pair">
     <div class="edit-field-group"><label>Phone</label><input type="text" data-field="Phone"></div>
     <div class="edit-field-group"><label>Phone 2</label><input type="text" data-field="Phone2"></div>
+    </div>
+    <div class="fs-pair">
     <div class="edit-field-group"><label>Governorate</label><select data-field="Gov" class="gov-select"></select></div>
     <div class="edit-field-group"><label>City</label><select data-field="city" class="city-select"></select></div>
+    </div>
     <div class="edit-field-group"><label>Address line 1</label><input type="text" data-field="Address_line1"></div>
     <div class="edit-field-group"><label>Address line 2</label><input type="text" data-field="Address_line2"></div>
     <div class="edit-field-group"><label>Address</label><textarea data-field="Address"></textarea></div>
@@ -1261,21 +1315,27 @@
       </div>
       <textarea data-field="items" id="itemsEditorRaw" style="display:none;"></textarea>
     </div>
+    <div class="fs-pair">
     <div class="edit-field-group"><label>Pieces</label><input type="text" data-field="pieces"></div>
     <div class="edit-field-group"><label>Weight</label><input type="text" data-field="weight"></div>
+    </div>
     <div class="edit-field-group"><label>Shipping cost (EGP)</label><input type="number" id="editShipInput" min="0" step="any" inputmode="decimal" placeholder="0"><label class="op-row"><input type="checkbox" id="editOpenPkg"><span>Open package</span><small class="opFeeTxt"></small></label><div class="no-status">COD = Total + Shipping cost. Each item's sale price can be changed in the Items list above.</div></div>
+    <div class="fs-pair">
     <div class="edit-field-group"><label>Total</label><input type="text" data-field="total"></div>
     <div class="edit-field-group"><label>COD</label><input type="text" data-field="COD"></div>
-    <div class="edit-field-group"><label>Note</label><textarea data-field="note"></textarea></div>
-    <div class="modal-options" style="margin-top:6px;">
-      <button class="modal-opt-btn" id="confirmEditOrderBtn">Save & send</button>
     </div>
-    <button class="modal-cancel" id="closeEditOrderModalBtn">Cancel</button>
+    <div class="edit-field-group"><label>Note</label><textarea data-field="note"></textarea></div>
+    <div class="pi-sbar">
+      <button class="modal-cancel" id="closeEditOrderModalBtn">Cancel</button>
+      <div class="modal-options">
+        <button class="modal-opt-btn" id="confirmEditOrderBtn">Save & send</button>
+      </div>
+    </div>
   </div>
 </div>
 
 <!-- ============ NEW ORDER MODAL ============ -->
-<div class="modal-overlay" id="newOrderModal">
+<div class="modal-overlay fs-modal" id="newOrderModal">
   <div class="modal-card edit-card">
     <div class="modal-title">New order</div>
     <div class="modal-sub">Search an existing customer, or type a new one.</div>
@@ -1288,10 +1348,14 @@
       <div class="no-status" id="noCustStatus"></div>
     </div>
     <div class="edit-field-group"><label>Customer name</label><input type="text" id="noName"></div>
+    <div class="fs-pair">
     <div class="edit-field-group"><label>Phone</label><input type="text" id="noPhone" inputmode="tel"></div>
     <div class="edit-field-group"><label>Phone 2</label><input type="text" id="noPhone2" inputmode="tel"></div>
+    </div>
+    <div class="fs-pair">
     <div class="edit-field-group"><label>Governorate</label><select id="noGov" class="gov-select"></select></div>
     <div class="edit-field-group"><label>City</label><select id="noCity" class="city-select"></select></div>
+    </div>
     <div class="edit-field-group"><label>Address line 1</label><input type="text" id="noAddr1"></div>
     <div class="edit-field-group"><label>Address line 2</label><input type="text" id="noAddr2"></div>
     <div class="edit-field-group">
@@ -1321,15 +1385,17 @@
     <div class="edit-field-group"><label>Note</label><textarea id="noNote"></textarea></div>
     <div class="no-sum" id="noSummary"></div>
     <div class="modal-field-error" id="noError"></div>
-    <div class="modal-options" style="margin-top:6px;">
-      <button class="modal-opt-btn" id="noSaveBtn">Create order</button>
+    <div class="pi-sbar">
+      <button class="modal-cancel" id="noCancelBtn">Cancel</button>
+      <div class="modal-options">
+        <button class="modal-opt-btn" id="noSaveBtn">Create order</button>
+      </div>
     </div>
-    <button class="modal-cancel" id="noCancelBtn">Cancel</button>
   </div>
 </div>
 
 <!-- ============ SHIPPING ZONES MODAL ============ -->
-<div class="modal-overlay" id="shipZonesModal">
+<div class="modal-overlay fs-modal" id="shipZonesModal">
   <div class="modal-card edit-card sz-card">
     <div class="modal-title">Shipping zones</div>
     <div class="modal-sub">Price by zone and weight. The website and "New order" use these prices.</div>
@@ -1354,12 +1420,12 @@
       </div>
       <div class="sz-msg" id="szTOut"></div>
     </div>
-    <button class="modal-cancel" id="szCloseBtn">Close</button>
+    <div class="pi-sbar"><button class="modal-cancel" id="szCloseBtn">Close</button></div>
   </div>
 </div>
 
 <!-- ============ ADD EXPENSE MODAL ============ -->
-<div class="modal-overlay" id="addExpenseModal">
+<div class="modal-overlay fs-modal" id="addExpenseModal">
   <div class="modal-card edit-card">
     <div class="modal-title">Add transaction</div>
     <div class="modal-sub">Log an expense, advance, or purchase for Bedir, Hazem, or the company account.</div>
@@ -1440,15 +1506,17 @@
     </div>
     <div class="modal-field-note" id="expLinkedNote" style="display:none;"></div>
     <div class="modal-field-error" id="expError"></div>
-    <div class="modal-options" style="margin-top:6px;">
-      <button class="modal-opt-btn" id="confirmAddExpenseBtn">Save transaction</button>
+    <div class="pi-sbar">
+      <button class="modal-cancel" id="closeAddExpenseModalBtn">Cancel</button>
+      <div class="modal-options">
+        <button class="modal-opt-btn" id="confirmAddExpenseBtn">Save transaction</button>
+      </div>
     </div>
-    <button class="modal-cancel" id="closeAddExpenseModalBtn">Cancel</button>
   </div>
 </div>
 
 <!-- ============ ADD EXTERNAL DEBT MODAL ============ -->
-<div class="modal-overlay" id="addDebtModal">
+<div class="modal-overlay fs-modal" id="addDebtModal">
   <div class="modal-card edit-card">
     <div class="modal-title">Add external debt</div>
     <div class="modal-sub">For a supplier or customer — not Bedir, Hazem, or UVA.</div>
@@ -1479,15 +1547,17 @@
     </div>
     <div class="modal-field-note" id="debtLinkedNote" style="display:none;"></div>
     <div class="modal-field-error" id="debtError"></div>
-    <div class="modal-options" style="margin-top:6px;">
-      <button class="modal-opt-btn" id="confirmAddDebtBtn">Save debt</button>
+    <div class="pi-sbar">
+      <button class="modal-cancel" id="closeAddDebtModalBtn">Cancel</button>
+      <div class="modal-options">
+        <button class="modal-opt-btn" id="confirmAddDebtBtn">Save debt</button>
+      </div>
     </div>
-    <button class="modal-cancel" id="closeAddDebtModalBtn">Cancel</button>
   </div>
 </div>
 
 <!-- ============ NEW PURCHASE (INVOICE) MODAL ============ -->
-<div class="modal-overlay" id="purchaseModal">
+<div class="modal-overlay fs-modal" id="purchaseModal">
   <div class="modal-card edit-card">
     <div class="modal-title">New purchase</div>
     <div class="modal-sub">Log products bought from a merchant — updates stock &amp; average cost.</div>
@@ -1602,7 +1672,7 @@
 </div>
 
 <!-- ============ TRANSFER MODAL (between Bedir / Hazem / UVA) ============ -->
-<div class="modal-overlay" id="transferModal">
+<div class="modal-overlay fs-modal" id="transferModal">
   <div class="modal-card edit-card">
     <div class="modal-title">Transfer between accounts</div>
     <div class="modal-sub">A transfer fee (if any) is deducted from the sender only — the recipient gets the exact amount.</div>
@@ -1647,15 +1717,17 @@
     </div>
 
     <div class="modal-field-error" id="trError"></div>
-    <div class="modal-options" style="margin-top:6px;">
-      <button class="modal-opt-btn" id="confirmTransferBtn">Save transfer</button>
+    <div class="pi-sbar">
+      <button class="modal-cancel" id="closeTransferModalBtn">Cancel</button>
+      <div class="modal-options">
+        <button class="modal-opt-btn" id="confirmTransferBtn">Save transfer</button>
+      </div>
     </div>
-    <button class="modal-cancel" id="closeTransferModalBtn">Cancel</button>
   </div>
 </div>
 
 <!-- ============ SUMMARY MODAL ============ -->
-<div class="modal-overlay" id="summaryModal">
+<div class="modal-overlay fs-modal" id="summaryModal">
   <div class="modal-card edit-card">
     <div class="modal-title">Summary</div>
     <div class="modal-sub">Inventory value, debts, pending orders, and this month's sales &amp; profit.</div>
@@ -1664,7 +1736,7 @@
       <div class="detail-row"><span class="detail-label">Loading…</span><span class="detail-value"></span></div>
     </div>
 
-    <button class="modal-cancel" id="closeSummaryModalBtn" style="margin-top:14px;">Close</button>
+    <div class="pi-sbar"><button class="modal-cancel" id="closeSummaryModalBtn">Close</button></div>
   </div>
 </div>
 
@@ -1688,7 +1760,7 @@
 </div>
 
 <!-- ============ SETTLE DEBT MODAL ============ -->
-<div class="modal-overlay" id="settleDebtModal">
+<div class="modal-overlay fs-modal" id="settleDebtModal">
   <div class="modal-card edit-card">
     <div class="modal-title">Settle debt</div>
     <div class="modal-sub" id="settleDebtSub"></div>
@@ -1725,10 +1797,12 @@
 
     <div class="modal-sub" id="settlePreview" style="font-weight:700;margin:4px 0 8px;"></div>
     <div class="modal-field-error" id="settleDebtError"></div>
-    <div class="modal-options" style="margin-top:6px;">
-      <button class="modal-opt-btn" id="confirmSettleDebtBtn">Confirm settled</button>
+    <div class="pi-sbar">
+      <button class="modal-cancel" id="closeSettleDebtModalBtn">Cancel</button>
+      <div class="modal-options">
+        <button class="modal-opt-btn" id="confirmSettleDebtBtn">Confirm settled</button>
+      </div>
     </div>
-    <button class="modal-cancel" id="closeSettleDebtModalBtn">Cancel</button>
   </div>
 </div>
 
@@ -6488,9 +6562,9 @@ ${invoiceFootHtml('')}`;
       list.innerHTML = colItems.map((it, i) => `
         <div class="pi-row">
           <span class="pi-name">${escapeHtml(it.name)}<span class="pi-sub">${it.salePrice || 0} EGP each</span></span>
-          <input type="number" class="col-qty" min="1" value="${it.qty}" data-idx="${i}" title="Quantity">
-          <span class="pi-sub-total">${((Number(it.salePrice) || 0) * it.qty).toFixed(2)}</span>
-          <button type="button" class="col-remove" data-idx="${i}" title="Remove">×</button>
+          <label class="pi-f"><span class="pi-fl">Qty</span><input type="number" class="col-qty pi-qty" min="1" value="${it.qty}" data-idx="${i}" title="Quantity" inputmode="numeric"></label>
+          <div class="pi-f"><span class="pi-fl">Total</span><span class="pi-sub-total">${((Number(it.salePrice) || 0) * it.qty).toFixed(2)}</span></div>
+          <button type="button" class="col-remove pi-remove" data-idx="${i}" title="Remove">×</button>
         </div>
       `).join('');
       list.querySelectorAll('.col-qty').forEach(inp => {
