@@ -8416,9 +8416,20 @@ ${invoiceFootHtml('')}`;
     .sa-im.first{border-color:var(--sage)}.sa-im img{width:100%;height:100%;object-fit:cover}
     .sa-im b{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.65);color:#fff;border-radius:6px;width:22px;height:22px;text-align:center;line-height:22px;cursor:pointer;font-size:13px}
     .sa-im i{position:absolute;bottom:2px;left:2px;background:rgba(0,0,0,.65);color:#fff;border-radius:6px;padding:0 6px;font-size:11px;font-style:normal;cursor:pointer}
-    .sa-var{display:grid;grid-template-columns:1.2fr 1fr 1fr .9fr .9fr .8fr 1.1fr .6fr auto;gap:6px;align-items:end;margin-bottom:6px}
+    .sa-var{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px 10px;align-items:end}
+    .sa-f{display:flex;flex-direction:column;gap:3px;min-width:0}.sa-f input,.sa-f select{width:100%}
+    .sa-ro{display:flex;align-items:center;min-height:38px;padding:9px 10px;border:1px dashed var(--line-strong);border-radius:10px;font-size:13.5px;font-weight:700;color:var(--cream-dim);background:rgba(127,127,127,.06)}
+    .sa-opth{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.sa-opth .sa-optn{margin:0;min-width:0;overflow-wrap:anywhere}
+    .sa-odel{flex:none;padding:5px 10px;font-size:12px}
     .sa-opt{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0;background:rgba(127,127,127,.04)}.sa-optn{font-weight:800;font-size:13px;margin-bottom:6px}
-    .sa-oimg{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px}.sa-oi{width:44px;height:44px;border-radius:8px;object-fit:cover;border:2px solid transparent;cursor:pointer;opacity:.7;box-sizing:border-box}.sa-oi.on{border-color:var(--gold);opacity:1}
+    .sa-oimg{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}.sa-oil{display:block;font-weight:700}
+    .sa-oirow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 6px 2px 0}
+    .sa-oiw{position:relative;display:inline-block;line-height:0}
+    .sa-oix{position:absolute;top:-7px;right:-7px;width:20px;height:20px;border-radius:50%;background:var(--rust);color:#fff;border:2px solid #fff;font-size:14px;font-weight:700;line-height:15px;text-align:center;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.35);z-index:2;box-sizing:border-box}
+    .sa-oix::after{content:"";position:absolute;inset:-9px}
+    .sa-oup{padding:7px 12px;font-size:12.5px}
+    .sa-rt{text-align:right}
+    .sa-sbar{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}.sa-oi{width:48px;height:48px;border-radius:8px;object-fit:cover;border:2px solid transparent;cursor:pointer;opacity:.7;box-sizing:border-box}.sa-oi.on{border-color:var(--gold);opacity:1}
     i.sa-oi{display:grid;place-items:center;font-size:10px;font-style:normal;background:rgba(127,127,127,.18);color:var(--cream)}.sa-var .h{font-size:11px;color:var(--cream-dim);font-weight:700}
     .sa-msg{font-size:13px;font-weight:700;margin-top:10px}.sa-msg.err{color:var(--rust)}.sa-msg.ok{color:var(--sage)}
     .sa-foot{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap}.sa-note{font-size:12px;color:var(--cream-dim);margin-top:4px}
@@ -8445,6 +8456,33 @@ ${invoiceFootHtml('')}`;
       .sa-tabs button{flex:0 0 auto;white-space:nowrap;padding:8px 16px;border:1px solid var(--line);background:var(--panel)}
       .sa-tabs button.on{background:var(--sage);border-color:var(--sage);color:#fff}
       .sa-bar input[type=search]{flex:1 1 100%}
+
+    @media(max-width:700px){
+      .sa-body{padding:12px 12px calc(16px + env(safe-area-inset-bottom))}
+      .sa input,.sa select,.sa textarea{font-size:16px;padding:10px 11px}
+      /* products list: title gets the full width, status/price sit on their own line */
+      .sa-pbar{gap:8px}.sa-pbar input[type=search],.sa-pbar select{flex:1 1 100%;width:100%}
+      .sa-pbar .sa-btn{flex:1 1 calc(50% - 4px);order:2;padding:10px 8px}.sa-pbar .sa-btn.pri{flex-basis:100%;order:1}
+      .sa-row{grid-template-columns:48px minmax(0,1fr);gap:8px 10px;padding:10px}
+      .sa-row .sa-th{width:48px;height:48px}
+      .sa-row>div:nth-child(2){min-width:0;overflow-wrap:anywhere}.sa-row .sa-t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+      .sa-rt{grid-column:1/-1;text-align:start;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;padding-top:8px;border-top:1px dashed var(--line)}
+      .sa-rt .sa-pill{margin:0}.sa-rt .sa-pp{margin-inline-start:auto;font-weight:700;color:var(--cream);font-size:13px}
+      /* editor: full-screen sheet with a Save bar that stays on screen */
+      .sa-mod{padding:0;align-items:stretch}
+      .sa-card{max-width:none;min-height:100%;border-radius:0;padding:14px 12px 0}
+      .sa-foot{position:sticky;bottom:0;z-index:8;margin:14px -12px 0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);justify-content:stretch;gap:8px}
+      .sa-foot .sa-btn{flex:1 1 calc(50% - 4px);text-align:center;text-decoration:none;padding:11px 8px}.sa-foot .sa-btn.pri{flex-basis:100%;order:-1}
+      .sa-foot.sa-more{position:static;margin:14px 0 0;padding:0;border:0;background:none}
+      .sa-sbar{position:sticky;bottom:0;z-index:8;margin:12px -12px 0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line)}
+      .sa-sbar .sa-btn{flex:1;padding:12px 8px}.sa-sbar .sa-btn.pri{flex:2}
+      .sa-card>.sa-btn{width:100%;margin-top:8px;padding:11px}
+      .sa-imgs{gap:8px}.sa-im{width:calc((100% - 16px)/3);height:auto;aspect-ratio:1}.sa-im b{width:26px;height:26px;line-height:26px;font-size:16px}
+      .sa-card .sa-bar input{flex:1 1 100%!important}.sa-card .sa-bar .sa-btn{flex:1 1 auto}
+      .sa-var{grid-template-columns:1fr 1fr}
+      .sa-opt{padding:12px 10px;margin:12px 0}
+      .sa-oi{width:52px;height:52px}
+      .sa-oup{flex:1 1 100%;padding:10px}
     }`;
     document.head.appendChild(css);
 
@@ -8842,12 +8880,12 @@ ${invoiceFootHtml('')}`;
         const prices = g.map(x => Number(x.sale_price) || Number(x.regular_price) || 0).filter(Boolean);
         return '<div class="sa-row" data-open="' + E(gKey(g)) + '">' + (im ? '<img class="sa-th" src="' + E(im) + '" alt="">' : '<span class="sa-th"></span>') +
           '<div><div class="sa-t">' + E(r.title_arabic || r.title || r.sku) + '</div><div class="sa-s">' + E(r.title && r.title_arabic ? r.title + ' · ' : '') + g.map(x => E(x.sku)).join(', ') + '</div></div>' +
-          '<div style="text-align:right"><span class="sa-pill ' + (on ? 'ok' : 'off') + '">' + (on ? 'Visible' : 'Hidden') + '</span>' + stockPill(g, bal) +
-          '<div class="sa-s">' + (prices.length ? Math.min.apply(null, prices) : '—') + ' EGP</div></div></div>';
+          '<div class="sa-rt"><span class="sa-pill ' + (on ? 'ok' : 'off') + '">' + (on ? 'Visible' : 'Hidden') + '</span>' + stockPill(g, bal) +
+          '<div class="sa-s sa-pp">' + (prices.length ? Math.min.apply(null, prices) : '—') + ' EGP</div></div></div>';
       }).join('');
     }
     function productsHtml() {
-      return '<div class="sa-bar"><input type="search" id="saQ" placeholder="Search products (Arabic or English) or SKU" value="' + E(st.q) + '"><select id="saF">' +
+      return '<div class="sa-bar sa-pbar"><input type="search" id="saQ" placeholder="Search products (Arabic or English) or SKU" value="' + E(st.q) + '"><select id="saF">' +
         [['all', 'All'], ['visible', 'Visible'], ['hidden', 'Hidden'], ['override', 'Manual stock display']].map(o => '<option value="' + o[0] + '"' + (st.filter === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select>' +
         '<button class="sa-btn" data-act="export">Export to Excel</button><button class="sa-btn" data-act="import">Import from Excel</button><button class="sa-btn" data-act="sync">Match real stock</button><button class="sa-btn pri" data-act="new">+ New product</button></div><div id="saList">' + listHtml() + '</div>';
     }
@@ -8935,20 +8973,24 @@ ${invoiceFootHtml('')}`;
         '<div class="sa-sec">Options — what the customer chooses between (size, weight, colour…)</div><div class="sa-note">Name the choice once, then add one line per option. <b>Each option has its own price, weight and picture.</b> Example: name “Size”, options 250 g / 500 g / 1 kg with their own prices and weights. The weight (kg) is what the shipping price is calculated from.</div>' +
         '<div class="sa-g2"><div><label>Option name — what the customer chooses (e.g. Size, Weight, Colour)</label>' + f('option1_name') + '</div><div><label>Second option name (optional, e.g. Colour)</label>' + f('option2_name') + '</div></div>' +
         (() => { const avail = Array.from(new Set(ed.images.concat(ed.variants.map(x => x.variant_image).filter(Boolean))));
-          return ed.variants.map((v, i) => '<div class="sa-opt"><div class="sa-optn">Option ' + (i + 1) + (v.option1_value ? ' — ' + E(v.option1_value) : '') + '</div>' +
-            '<div class="sa-var"><span class="h">SKU</span><span class="h">Value 1</span><span class="h">Value 2</span><span class="h">Sale price</span><span class="h">Price before discount</span><span class="h">Weight (kg)</span><span class="h">Stock display</span><span class="h">Real stock</span><span></span>' +
-            '<input data-v="' + i + '.sku" value="' + E(v.sku) + '"' + (v.id ? ' readonly' : '') + '><input data-v="' + i + '.option1_value" value="' + E(v.option1_value) + '" placeholder="e.g. 250 g"><input data-v="' + i + '.option2_value" value="' + E(v.option2_value) + '">' +
-            '<input data-v="' + i + '.sale_price" type="text" inputmode="decimal" value="' + E(v.sale_price) + '"><input data-v="' + i + '.regular_price" type="text" inputmode="decimal" value="' + E(v.regular_price) + '"><input data-v="' + i + '.weight" type="text" inputmode="decimal" value="' + E(v.weight) + '" placeholder="0.25">' + modeSel(i, v.store_stock_mode) +
-            '<span class="sa-s">' + (v.id ? E(v.balance) : '—') + '</span>' + (v.id ? (ed.variants.length > 1 ? '<button class="sa-btn dan" data-delvar="' + i + '" title="Delete this option">×</button>' : '<span></span>') : '<button class="sa-btn dan" data-rmvar="' + i + '">×</button>') + '</div>' +
-            '<div class="sa-oimg"><span class="sa-s">Picture for this option:</span><i class="sa-oi' + (!v.variant_image ? ' on' : '') + '" data-vimg="' + i + '|" title="Use the main picture">main</i>' +
-            avail.map(u => '<img class="sa-oi' + (v.variant_image === u ? ' on' : '') + '" src="' + E(u) + '" alt="" data-vimg="' + i + '|' + E(u) + '">').join('') +
-            '<button class="sa-btn" data-vup="' + i + '">' + (v.variant_image ? 'Replace picture' : '+ Upload') + '</button>' + (v.variant_image ? '<button class="sa-btn dan" data-vimgrm="' + i + '">Remove picture</button>' : '') + '</div></div>').join(''); })() +
+          return ed.variants.map((v, i) => {
+            const fld = (lab, inner) => '<div class="sa-f"><span class="h">' + lab + '</span>' + inner + '</div>';
+            const inp = (k, extra) => '<input data-v="' + i + '.' + k + '" value="' + E(v[k]) + '"' + (extra || '') + '>';
+            const del = v.id ? (ed.variants.length > 1 ? '<button class="sa-btn dan sa-odel" data-delvar="' + i + '" title="Delete this option">Delete option</button>' : '') : '<button class="sa-btn dan sa-odel" data-rmvar="' + i + '">Remove option</button>';
+            return '<div class="sa-opt"><div class="sa-opth"><div class="sa-optn">Option ' + (i + 1) + (v.option1_value ? ' \u2014 ' + E(v.option1_value) : '') + '</div>' + del + '</div>' +
+              '<div class="sa-var">' + fld('SKU', inp('sku', v.id ? ' readonly' : '')) + fld('Value 1', inp('option1_value', ' placeholder="e.g. 250 g"')) + fld('Value 2', inp('option2_value')) +
+              fld('Sale price', inp('sale_price', ' inputmode="decimal"')) + fld('Price before discount', inp('regular_price', ' inputmode="decimal"')) + fld('Weight (kg)', inp('weight', ' inputmode="decimal" placeholder="0.25"')) +
+              fld('Stock display', modeSel(i, v.store_stock_mode)) + fld('Real stock', '<div class="sa-ro">' + (v.id ? E(v.balance) : '\u2014') + '</div>') + '</div>' +
+              '<div class="sa-oimg"><span class="sa-s sa-oil">Picture for this option</span><div class="sa-oirow"><i class="sa-oi' + (!v.variant_image ? ' on' : '') + '" data-vimg="' + i + '|" title="Use the main picture">main</i>' +
+              avail.map(u => '<span class="sa-oiw"><img class="sa-oi' + (v.variant_image === u ? ' on' : '') + '" src="' + E(u) + '" alt="" data-vimg="' + i + '|' + E(u) + '">' + (v.variant_image === u ? '<b class="sa-oix" data-vimgrm="' + i + '" title="Remove this picture">\u00d7</b>' : '') + '</span>').join('') +
+              '<button class="sa-btn sa-oup" data-vup="' + i + '">' + (v.variant_image ? 'Replace picture' : '+ Upload') + '</button></div></div></div>';
+          }).join(''); })() +
         '<input type="file" id="saVFile" accept="image/*" hidden>' +
         '<button class="sa-btn" data-act="addvar">+ Add option</button>' + (ed.isNew ? '' : '<button class="sa-btn" data-act="mergeopen">Merge another product into this one…</button>') +
         (ed.merge ? '<div class="sa-opt"><div class="sa-s">Pick the product that should become an option of this one (it takes this product\'s name, description and pictures; its own picture stays on its option). Unsaved changes in this window are lost.</div><input data-mergeq placeholder="Search by name or SKU" value="' + E(ed.mergeQ || '') + '"><div id="saMergeList">' + mergeListHtml() + '</div></div>' : '') + '<div class="sa-note">Cost and real quantity are edited in Inventory, never here, and customers never see them.</div>' +
-        '<div class="sa-msg ' + (ed.msgErr ? 'err' : 'ok') + '" id="saMsg">' + E(ed.msg) + '</div><div class="sa-foot">' +
-        (ed.isNew ? '' : '<button class="sa-btn dan" data-act="delprod">Delete</button><button class="sa-btn" data-act="dupprod" title="Open a copy of this product with an empty SKU">Duplicate</button><button class="sa-btn" data-act="copylink" data-url="' + E(url) + '">Copy link</button><a class="sa-btn" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent((sh.title_arabic || sh.title) + ' ' + url) + '">Share on WhatsApp</a>') +
-        '<button class="sa-btn" data-act="cancel">Cancel</button><button class="sa-btn pri" data-act="saveprod"' + (ed.busy || ed.uploading ? ' disabled' : '') + '>' + (ed.uploading ? 'Uploading…' : 'Save') + '</button></div></div></div>';
+        '<div class="sa-msg ' + (ed.msgErr ? 'err' : 'ok') + '" id="saMsg">' + E(ed.msg) + '</div>' +
+        (ed.isNew ? '' : '<div class="sa-foot sa-more"><button class="sa-btn dan" data-act="delprod">Delete</button><button class="sa-btn" data-act="dupprod" title="Open a copy of this product with an empty SKU">Duplicate</button><button class="sa-btn" data-act="copylink" data-url="' + E(url) + '">Copy link</button><a class="sa-btn" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent((sh.title_arabic || sh.title) + ' ' + url) + '">Share on WhatsApp</a></div>') +
+        '<div class="sa-sbar"><button class="sa-btn" data-act="cancel">Cancel</button><button class="sa-btn pri" data-act="saveprod"' + (ed.busy || ed.uploading ? ' disabled' : '') + '>' + (ed.uploading ? 'Uploading…' : 'Save') + '</button></div></div></div>';
     }
 
     // ---- images: resized to WebP in the browser, stored in the public bucket ----
