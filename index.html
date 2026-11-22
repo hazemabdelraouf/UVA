@@ -8481,6 +8481,9 @@ ${invoiceFootHtml('')}`;
     .sa-chip{font-size:12px;font-weight:700;padding:4px 10px;border-radius:99px;background:var(--panel-2);color:var(--cream-dim)}.sa-chip.wait,.sa-chip.busy{background:#fff7ed;color:#9a3412}.sa-chip.ok{background:#dcfce7;color:#166534}.sa-chip.err{background:#fee2e2;color:#991b1b}
     .sa-btn{border:1px solid var(--line);background:var(--panel);color:var(--cream);padding:8px 14px;border-radius:10px;font:inherit;font-weight:700;font-size:13px;cursor:pointer}
     .sa-btn.ico{display:inline-flex;align-items:center;justify-content:center;padding:8px 10px}
+    .sa-btn.sa-loading{opacity:.75;pointer-events:none}.sa-btn.sa-loading::before{content:"";display:inline-block;width:12px;height:12px;margin-inline-end:8px;vertical-align:-2px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+    .sa-btn.sa-done{background:#dcfce7;border-color:#86efac;color:#166534}.sa-btn.sa-fail{background:#fee2e2;border-color:#fca5a5;color:#991b1b}
+    .sa-body{transition:opacity .15s}.sa-body.sa-refreshing{opacity:.5;pointer-events:none}
     .sa-btn.pri{background:var(--sage);border-color:var(--sage);color:#fff}.sa-btn.dan{color:var(--rust)}.sa-btn:disabled{opacity:.5;cursor:default}
     .sa-body{flex:1;overflow:auto;padding:16px;max-width:1100px;width:100%;margin:0 auto}
     .sa-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
@@ -9686,6 +9689,22 @@ ${invoiceFootHtml('')}`;
     const ago = ts => { const s = Math.max(0, Math.round((Date.now() - new Date(ts).getTime()) / 1000)); return s < 90 ? 'just now' : s < 3600 ? Math.round(s / 60) + ' min ago' : s < 172800 ? Math.round(s / 3600) + ' h ago' : Math.round(s / 86400) + ' days ago'; };
     const dec = s => { try { return decodeURIComponent(s || ''); } catch (e) { return s || ''; } };
     // Overview = ONE call (plus a tiny count). No polling: it loads when you open the page, is reused for 3 minutes, and Refresh gets new numbers.
+    // Refresh buttons: show spinner + dimmed content while loading, then a brief "Updated" confirmation.
+    let refreshBusy = false;
+    async function refreshWithFeedback(btn, act, fn) {
+      if (refreshBusy) return; refreshBusy = true;
+      const label = btn.textContent;
+      btn.disabled = true; btn.classList.add('sa-loading'); btn.textContent = 'Refreshing\u2026'; main.classList.add('sa-refreshing');
+      let failed = false;
+      try { await fn(); } catch (e) { failed = true; }
+      main.classList.remove('sa-refreshing'); refreshBusy = false;
+      const nb = main.querySelector('[data-act="' + act + '"]');      // the page was redrawn: find the new button
+      if (nb) {
+        nb.classList.add(failed ? 'sa-fail' : 'sa-done'); nb.textContent = failed ? 'Failed \u2014 try again' : 'Updated \u2713';
+        setTimeout(() => { if (nb.isConnected) { nb.classList.remove('sa-done', 'sa-fail'); nb.textContent = label; } }, 2200);
+      }
+      toast(failed ? 'Could not refresh' : 'Updated');
+    }
     async function loadOverview(force) {
       if (root.hidden || st.tab !== 'overview') return;
       if (!force && st.ov && !st.ov.error && Date.now() - (st.ovAt || 0) < 180000) { main.innerHTML = tabHtml(); return; }
@@ -10077,8 +10096,8 @@ ${invoiceFootHtml('')}`;
       if (open && !act) { openEditor(open.dataset.open); return; }
       if (!act) return;
       const a = act.dataset.act;
-      if (a === 'an-refresh') { loadAnalytics(true); }
-      else if (a === 'ov-refresh') { loadOverview(true); }
+      if (a === 'an-refresh') { refreshWithFeedback(act, 'an-refresh', () => loadAnalytics(true)); }
+      else if (a === 'ov-refresh') { refreshWithFeedback(act, 'ov-refresh', () => loadOverview(true)); }
       else if (a === 'ai-run') aiRun();
       else if (a === 'ai-ping') aiPing();
       else if (a === 'ai-apply') aiApply(act.dataset.id);
