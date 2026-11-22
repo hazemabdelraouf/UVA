@@ -8470,15 +8470,15 @@ ${invoiceFootHtml('')}`;
       .sa-rt .sa-pill{margin:0}.sa-rt .sa-pp{margin-inline-start:auto;font-weight:700;color:var(--cream);font-size:13px}
       /* editor: full-screen sheet with a Save bar that stays on screen */
       .sa-mod{padding:0;align-items:stretch}
-      .sa-card{max-width:none;min-height:100%;border-radius:0;padding:14px 12px 0}
-      .sa-foot{position:sticky;bottom:0;z-index:8;margin:14px -12px 0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);justify-content:stretch;gap:8px}
-      .sa-foot .sa-btn{flex:1 1 calc(50% - 4px);text-align:center;text-decoration:none;padding:11px 8px}.sa-foot .sa-btn.pri{flex-basis:100%;order:-1}
-      .sa-foot.sa-more{position:static;margin:14px 0 0;padding:0;border:0;background:none}
+      .sa-mod>.sa-card{max-width:none;min-height:100%;border-radius:0;padding:14px 12px 0}
+      .sa-mod .sa-foot:not(.ap-sticky){position:sticky;bottom:0;z-index:8;margin:14px -12px 0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);justify-content:stretch;gap:8px}
+      .sa-mod .sa-foot .sa-btn{flex:1 1 calc(50% - 4px);text-align:center;text-decoration:none;padding:11px 8px}.sa-mod .sa-foot .sa-btn.pri{flex-basis:100%;order:-1}
+      .sa-mod .sa-foot.sa-more{position:static;margin:14px 0 0;padding:0;border:0;background:none}
       .sa-sbar{position:sticky;bottom:0;z-index:8;margin:12px -12px 0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line)}
       .sa-sbar .sa-btn{flex:1;padding:12px 8px}.sa-sbar .sa-btn.pri{flex:2}
-      .sa-card>.sa-btn{width:100%;margin-top:8px;padding:11px}
+      .sa-mod>.sa-card>.sa-btn{width:100%;margin-top:8px;padding:11px}
       .sa-imgs{gap:8px}.sa-im{width:calc((100% - 16px)/3);height:auto;aspect-ratio:1}.sa-im b{width:26px;height:26px;line-height:26px;font-size:16px}
-      .sa-card .sa-bar input{flex:1 1 100%!important}.sa-card .sa-bar .sa-btn{flex:1 1 auto}
+      .sa-mod .sa-bar input{flex:1 1 100%!important}.sa-mod .sa-bar .sa-btn{flex:1 1 auto}
       .sa-var{grid-template-columns:1fr 1fr}
       .sa-opt{padding:12px 10px;margin:12px 0}
       .sa-oi{width:52px;height:52px}
