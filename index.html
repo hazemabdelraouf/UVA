@@ -882,6 +882,39 @@
     margin-top:10px;padding-top:10px;border-top:1px dashed var(--line-strong);
     font-family:'Cairo';font-weight:800;font-size:15px;color:var(--cream);}
   .pi-empty{text-align:center;color:var(--cream-dim);font-size:12.5px;padding:14px 0;}
+  /* purchase modal: action bar + labelled item fields */
+  .pi-sbar{display:flex;flex-direction:column-reverse;}
+  .pi-sbar .modal-options{margin-top:6px;}
+  .pi-f{display:contents;}.pi-fl{display:none;}
+  /* ===== Mobile: New purchase fills the whole screen, Save/Cancel stay visible ===== */
+  @media (max-width:700px){
+    #purchaseModal{padding:0;align-items:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--panel);backdrop-filter:none;}
+    #purchaseModal .modal-card.edit-card{max-width:none;width:100%;min-height:100%;max-height:none;overflow:visible;border:0;border-radius:0;box-shadow:none;animation:none;padding:16px 14px 0;}
+    #purchaseModal .modal-title{font-size:20px;}
+    #purchaseModal .modal-sub{margin-bottom:14px;}
+    #purchaseModal .edit-field-group{margin-bottom:16px;}
+    #purchaseModal .edit-field-group label{font-size:12px;}
+    #purchaseModal input,#purchaseModal select,#purchaseModal textarea{font-size:16px;}
+    #purchaseModal .edit-field-group input,#purchaseModal .edit-field-group textarea,#purchaseModal .edit-field-group select{padding:12px;}
+    #purchaseModal input[type="datetime-local"]{min-width:0;max-width:100%;}
+    /* add-product row: search on its own line, then qty / cost / Add */
+    #purchaseModal .pi-add-row{gap:8px;}
+    #purchaseModal .pi-add-row .items-editor-search-wrap{flex:1 1 100% !important;min-width:0 !important;}
+    #purchaseModal .pi-add-row input[type="number"]{flex:1 1 0;width:auto !important;min-width:0;padding:12px 8px;text-align:center;}
+    #purchaseModal .pi-add-row .btn{flex:none;width:auto !important;padding:12px 20px !important;}
+    /* product rows: name + remove on the first line, then labelled Qty / Unit cost / Total */
+    #purchaseModal .pi-row{flex-wrap:wrap;gap:8px;padding:10px;align-items:flex-start;}
+    #purchaseModal .pi-name{order:1;flex:1 1 calc(100% - 46px);min-width:0;overflow-wrap:anywhere;align-self:center;}
+    #purchaseModal .pi-remove{order:2;flex:none;width:36px;height:36px;font-size:22px;border-radius:10px;background:var(--panel);border:1px solid var(--line);}
+    #purchaseModal .pi-f{order:3;display:flex;flex-direction:column;gap:3px;flex:1 1 0;min-width:0;}
+    #purchaseModal .pi-fl{display:block;font-size:11px;font-weight:700;color:var(--cream-dim);}
+    #purchaseModal .pi-qty,#purchaseModal .pi-price{width:100%;padding:10px 6px;border-radius:10px;}
+    #purchaseModal .pi-sub-total{width:auto;text-align:start;display:flex;align-items:center;min-height:44px;font-size:14px;}
+    /* sticky bottom bar */
+    #purchaseModal .pi-sbar{position:sticky;bottom:0;z-index:8;flex-direction:row;gap:10px;margin:16px -14px 0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);}
+    #purchaseModal .pi-sbar .modal-cancel{flex:1;margin:0;padding:13px 8px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--cream);font-size:14px;font-weight:700;}
+    #purchaseModal .pi-sbar .modal-options{flex:2;margin:0;}
+  }
 </style>
 </head>
 <body>
@@ -1544,10 +1577,12 @@
     </div>
 
     <div class="modal-field-error" id="piError"></div>
-    <div class="modal-options" style="margin-top:6px;">
-      <button class="modal-opt-btn" id="confirmPurchaseBtn">Save purchase</button>
+    <div class="pi-sbar">
+      <button class="modal-cancel" id="closePurchaseModalBtn">Cancel</button>
+      <div class="modal-options">
+        <button class="modal-opt-btn" id="confirmPurchaseBtn">Save purchase</button>
+      </div>
     </div>
-    <button class="modal-cancel" id="closePurchaseModalBtn">Cancel</button>
   </div>
 </div>
 
@@ -6935,9 +6970,9 @@ ${invoiceFootHtml('')}`;
       list.innerHTML = piItems.map((it, i) => `
         <div class="pi-row">
           <span class="pi-name">${escapeHtml(it.name)}<span class="pi-sub">row ${it.row}</span></span>
-          <input type="number" class="pi-qty" min="1" value="${it.qty}" data-idx="${i}" title="Quantity">
-          <input type="number" class="pi-price" min="0" step="0.01" value="${it.price}" data-idx="${i}" title="Unit cost">
-          <span class="pi-sub-total">${(it.qty * it.price).toFixed(2)}</span>
+          <label class="pi-f"><span class="pi-fl">Qty</span><input type="number" class="pi-qty" min="1" value="${it.qty}" data-idx="${i}" title="Quantity" inputmode="numeric"></label>
+          <label class="pi-f"><span class="pi-fl">Unit cost</span><input type="number" class="pi-price" min="0" step="0.01" value="${it.price}" data-idx="${i}" title="Unit cost" inputmode="decimal"></label>
+          <div class="pi-f"><span class="pi-fl">Total</span><span class="pi-sub-total">${(it.qty * it.price).toFixed(2)}</span></div>
           <button type="button" class="pi-remove" data-idx="${i}" title="Remove">×</button>
         </div>
       `).join('');
