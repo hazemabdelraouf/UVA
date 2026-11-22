@@ -9585,10 +9585,14 @@ ${invoiceFootHtml('')}`;
     const anCard = (n, l, extra) => '<div class="sa-card" style="padding:14px;box-shadow:none;border:1px solid var(--line);text-align:center"><div style="font-size:24px;font-weight:800;overflow-wrap:anywhere">' + n + '</div><div class="sa-s">' + l + '</div>' + (extra || '') + '</div>';
 
     function syncCartBadge() { top.querySelectorAll('[data-tab="carts"]').forEach(b => { b.textContent = 'Abandoned carts' + (st.pending ? ' (' + st.pending + ')' : ''); }); }
+    // A cart counts as abandoned only after the customer has been quiet for this many minutes
+    // (last_activity_at is refreshed by /api/cart on every save and by the checkout page's heartbeat).
+    const CART_QUIET_MIN = 5;
+    const cartQuietCutoff = () => new Date(Date.now() - CART_QUIET_MIN * 60000).toISOString();
     async function loadPending(force) {
       if (!force && st.pendAt && Date.now() - st.pendAt < 120000) return;   // at most every 2 minutes
       st.pendAt = Date.now();                          // only carts you have NOT contacted (or dismissed) count as news
-      const r = await SB().from('store_carts').select('cart_id', { count: 'exact', head: true }).eq('status', 'open').not('phone', 'is', null).neq('phone', '').not('checkout_started_at', 'is', null).is('contacted_at', null).or('dismissed.is.null,dismissed.eq.false');
+      const r = await SB().from('store_carts').select('cart_id', { count: 'exact', head: true }).eq('status', 'open').not('phone', 'is', null).neq('phone', '').not('checkout_started_at', 'is', null).is('contacted_at', null).or('dismissed.is.null,dismissed.eq.false').or('last_activity_at.is.null,last_activity_at.lt.' + cartQuietCutoff());
       if (!r.error && typeof r.count === 'number') st.pending = r.count;
     }
     async function loadOvExtra() { /* removed: the two extra analytics calls on every refresh. Details live in the Analytics tab. */ }
@@ -9765,7 +9769,7 @@ ${invoiceFootHtml('')}`;
 
     // ============ abandoned carts ============
     async function loadCarts() {
-      const r = await SB().from('store_carts').select('*').eq('status', 'open').order('checkout_started_at', { ascending: false }).limit(300);
+      const r = await SB().from('store_carts').select('*').eq('status', 'open').or('last_activity_at.is.null,last_activity_at.lt.' + cartQuietCutoff()).order('checkout_started_at', { ascending: false }).limit(300);
       st.carts = (r.data || []).filter(c => c.phone && c.checkout_started_at && !c.dismissed);
     }
     const pBySku = sku => st.products.find(x => String(x.sku || '').trim().toLowerCase() === String(sku || '').trim().toLowerCase());
@@ -9774,10 +9778,10 @@ ${invoiceFootHtml('')}`;
     const waText = c => 'أهلاً ' + (c.name || '') + ' 👋\nلاحظنا إنك سبت طلبك عندنا في UVA، والمنتجات لسه في سلتك:\n' + cartLines(c).map(l => '• ' + l.name + ' × ' + l.qty).join('\n') + '\nتقدر تكمّل طلبك من هنا:\n' + cartLink(c) + '\nولو محتاج أي مساعدة إحنا معاك.';
     function cartsHtml() {
       const f = st.cartFilter, rows = st.carts.filter(c => f === 'all' || (f === 'new' ? !c.contacted_at : !!c.contacted_at));
-      return '<div class="sa-bar"><select id="saCF">' + [['new', 'Not contacted yet'], ['done', 'Contacted'], ['all', 'All']].map(o => '<option value="' + o[0] + '"' + (f === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select><span class="sa-note">Customers who typed a phone number at checkout but did not order. The reminder link opens the checkout again with the same products and the details the customer already typed. Links use: <b>' + E(siteUrl()) + '</b> (change it in Integrations).</span></div>' +
-        (rows.length ? rows.map(c => { const ln = cartLines(c), total = ln.reduce((s, l) => s + l.price * l.qty, 0), fresh = (Date.now() - new Date(c.checkout_started_at).getTime()) < 20 * 60000, src = c.utm && (c.utm.source || c.utm.campaign);
-          return '<div class="sa-row" style="grid-template-columns:1fr auto;cursor:default"><div><div class="sa-t">' + E(c.name || 'No name') + ' · <span dir="ltr">' + E(c.phone) + '</span></div><div class="sa-s">' + ln.map(l => E(l.name) + ' × ' + l.qty).join(' · ') + '</div><div class="sa-s">≈ ' + total + ' EGP at current prices · started ' + E(ago(c.checkout_started_at)) + (src ? ' · from ' + E(src) : '') + '</div>' +
-            '<div style="margin-top:4px">' + (fresh ? '<span class="sa-pill warn">May still be ordering</span>' : '') + (c.contacted_at ? '<span class="sa-pill ok">Contacted ' + E(ago(c.contacted_at)) + '</span>' : '') + '</div></div>' +
+      return '<div class="sa-bar"><select id="saCF">' + [['new', 'Not contacted yet'], ['done', 'Contacted'], ['all', 'All']].map(o => '<option value="' + o[0] + '"' + (f === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select><span class="sa-note">Customers who typed a phone number at checkout, did not order, and have been inactive for ' + CART_QUIET_MIN + ' minutes or more. The reminder link opens the checkout again with the same products and the details the customer already typed. Links use: <b>' + E(siteUrl()) + '</b> (change it in Integrations).</span></div>' +
+        (rows.length ? rows.map(c => { const ln = cartLines(c), total = ln.reduce((s, l) => s + l.price * l.qty, 0), src = c.utm && (c.utm.source || c.utm.campaign);
+          return '<div class="sa-row" style="grid-template-columns:1fr auto;cursor:default"><div><div class="sa-t">' + E(c.name || 'No name') + ' · <span dir="ltr">' + E(c.phone) + '</span></div><div class="sa-s">' + ln.map(l => E(l.name) + ' × ' + l.qty).join(' · ') + '</div><div class="sa-s">≈ ' + total + ' EGP at current prices · started ' + E(ago(c.checkout_started_at)) + (c.last_activity_at ? ' · last active ' + E(ago(c.last_activity_at)) : '') + (src ? ' · from ' + E(src) : '') + '</div>' +
+            '<div style="margin-top:4px">' + (c.contacted_at ? '<span class="sa-pill ok">Contacted ' + E(ago(c.contacted_at)) + '</span>' : '') + '</div></div>' +
             '<div class="sa-act" style="flex-wrap:wrap;justify-content:flex-end"><a class="sa-btn pri" target="_blank" rel="noopener" data-wa="' + E(c.cart_id) + '" href="https://wa.me/' + String(c.phone).replace(/\D/g, '') + '?text=' + encodeURIComponent(waText(c)) + '">WhatsApp</a><button class="sa-btn" data-copy="' + E(cartLink(c)) + '">Copy link</button>' + (c.contacted_at ? '' : '<button class="sa-btn" data-cdone="' + E(c.cart_id) + '">Mark contacted</button>') + '<button class="sa-btn dan" data-cdel="' + E(c.cart_id) + '">Dismiss</button></div></div>'; }).join('') : '<p class="sa-note">Nothing here.</p>');
     }
     async function cartUpdate(id, patch) { const c0 = st.carts.find(x => x.cart_id === id), wasNew = !!c0 && !c0.contacted_at; const r = await SB().from('store_carts').update(patch).eq('cart_id', id); if (r.error) { toast(r.error.message); return false; } const c = st.carts.find(x => x.cart_id === id); if (c) Object.assign(c, patch); if (patch.dismissed) { st.carts = st.carts.filter(x => x.cart_id !== id); if (st.ov && st.ov.abandoned) st.ov.abandoned--; } if (wasNew && (patch.contacted_at || patch.dismissed)) st.pending = Math.max(0, st.pending - 1); syncCartBadge(); main.innerHTML = tabHtml(); return true; }
