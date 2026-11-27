@@ -3577,7 +3577,7 @@ try{
       // Notification to Make: all the order data, items comma-joined.
       const payload = { event: 'new order', 'Order Serial': serial, 'order ID': 'D' + serial, 'Customer Name': fields.customerName,
         Phone: fields.phone, Phone2: fields.phone2, Gov: fields.gov, city: fields.city, Address_line1: fields.addressLine1,
-        Address_line2: fields.addressLine2, Address: fields.city + '-' + fields.gov, items: itemsText, pieces: t.pieces, weight: t.weight,
+        Address_line2: fields.addressLine2, Address: [fields.addressLine1, fields.addressLine2, fields.city, fields.gov].map(x => String(x || '').replace(/\s*[\r\n]+\s*/g, ', ').trim()).filter(Boolean).join(', '), items: itemsText, pieces: t.pieces, weight: t.weight,
         total: t.total, 'Shipping cost': t.ship, COD: t.cod, 'open package': fields['open package'], open_package: fields.open_package, note: fields.note, shipping_status: 'request needed', payment_status: 'PENDING', payment_method: 'cod',
         customer_id: data.customer_id || '', timestamp: new Date().toISOString(),
         // where the order came from (the website sends source 'website' + lang ar/en) and new vs existing customer
