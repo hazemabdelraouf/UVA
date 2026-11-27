@@ -321,6 +321,8 @@
   }
   .order-top{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:flex-start;}
   .status-icon{font-size:26px;line-height:1;text-align:center;padding-top:2px;}
+  .order-tags{display:inline-flex;gap:6px;align-items:center}
+  .otag{font-size:13px;line-height:1;opacity:.85;cursor:help}
   /* Customer who has a Returned order (matched by phone) -> red card */
   .order-card.returned-customer{
     border-color:var(--rust);
@@ -2119,6 +2121,15 @@ try{
     if(s==='request needed') return 'ship-request-needed';
     if(s==='pending pickup') return 'ship-pending-pickup';
     return 'ship-other';
+  }
+  // Two small icons on the order card: where the order came from + how it is paid (orders.source / orders.payment_method).
+  function orderTags(o){
+    const S = { website: ['🌐', 'Website order'], dashboard: ['🖥️', 'Created from the dashboard'] };
+    const P = { cod: ['💵', 'Cash on delivery'], card: ['💳', 'Paid by card'], wallet: ['📱', 'Paid by mobile wallet'] };
+    const s = S[String(o.source || '').toLowerCase()], p = P[String(o.payment_method || '').toLowerCase()];
+    const tag = t => `<span class="otag" title="${t[1]}" aria-label="${t[1]}">${t[0]}</span>`;
+    const html = (s ? tag(s) : '') + (p ? tag(p) : '');
+    return html ? `<span class="order-tags">${html}</span>` : '';
   }
   function shipStatusIcon(s){
     const ICONS = {
@@ -4923,6 +4934,7 @@ try{
           <div class="order-sub">
             <span>${escapeHtml(o.Phone||'')}</span>
             ${city? `<span>${escapeHtml(city)}</span>`:''}
+            ${orderTags(o)}
           </div>
         </div>
         <div class="status-icon" title="Shipping: ${escapeAttr(SHIP_LABELS[ship]||ship||'No status')}">${shipStatusIcon(ship)}</div>
