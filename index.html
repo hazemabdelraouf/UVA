@@ -436,6 +436,13 @@
     color:#ffffff;
   }
   .card-btn:active{transform:scale(0.98);}
+  .return-btn{background:linear-gradient(180deg, #f87171, #dc2626);color:#ffffff;}
+  .exchange-btn{background:linear-gradient(180deg, #a78bfa, #7c3aed);color:#ffffff;}
+  .ex-sum{display:flex;flex-direction:column;gap:5px;margin:12px 0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;font-size:13.5px;background:var(--panel-2);}
+  .ex-sum div{display:flex;justify-content:space-between;gap:10px;}
+  .ex-sum .ex-total{font-weight:800;font-size:15px;border-top:1px dashed var(--line-strong);padding-top:7px;margin-top:3px;}
+  .ex-sum .ex-total.refund{color:var(--rust);}
+  .ex-search-wrap{position:relative;flex:1;}
   .card-btn.sending{opacity:0.75;pointer-events:none;}
   .card-btn.success{background:var(--sage) !important;color:#ffffff !important;border:none !important;opacity:1 !important;}
   .card-btn.error{background:var(--rust) !important;color:#fff !important;border:none !important;opacity:1 !important;}
@@ -1336,6 +1343,47 @@
   </div>
 </div>
 
+<!-- ============ EXCHANGE MODAL (delivered orders) ============ -->
+<div class="modal-overlay fs-modal" id="exchangeModal">
+  <div class="modal-card edit-card">
+    <div class="modal-title" id="exModalTitle">Exchange</div>
+    <div class="modal-sub">Set what the customer returns and what they receive instead.</div>
+    <div class="edit-field-group">
+      <label>Customer returns <small style="font-weight:500;color:var(--cream-dim)">(quantity to take back)</small></label>
+      <div class="items-editor-list" id="exOldList"></div>
+    </div>
+    <div class="edit-field-group">
+      <label>Customer receives instead</label>
+      <div class="items-editor-list" id="exNewList"></div>
+      <div class="items-editor-add">
+        <div class="items-editor-search-wrap ex-search-wrap">
+          <input type="text" id="exSearch" placeholder="Search product..." autocomplete="off">
+          <div class="items-editor-search-results" id="exSearchResults"></div>
+        </div>
+        <input type="number" id="exQty" min="1" value="1">
+        <button type="button" id="exAddBtn">Add</button>
+      </div>
+    </div>
+    <div class="fs-pair">
+      <div class="edit-field-group"><label>Shipping cost (EGP)</label><input type="number" id="exShip" min="0" step="any" inputmode="decimal" placeholder="0"></div>
+      <div class="edit-field-group"><label>Shipping paid by</label><select id="exShipBy"><option value="customer">Customer</option><option value="store">Us (store)</option></select></div>
+    </div>
+    <div class="fs-pair">
+      <div class="edit-field-group"><label>Returned goods go to</label><select id="exLoc"><option>Menya</option><option>Mahalla</option><option>Mashaya</option></select></div>
+      <div class="edit-field-group"><label>Pickup date</label><input type="date" id="exDate" class="reschedule-date-input"></div>
+    </div>
+    <div class="modal-field-error" id="exDateError">Fridays aren't available for pickup — please choose another day.</div>
+    <div class="ex-sum" id="exSummary"></div>
+    <div class="modal-field-error" id="exError"></div>
+    <div class="pi-sbar">
+      <button class="modal-cancel" id="exCancelBtn">Cancel</button>
+      <div class="modal-options">
+        <button class="modal-opt-btn" id="exConfirmBtn">Confirm exchange</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============ NEW ORDER MODAL ============ -->
 <div class="modal-overlay fs-modal" id="newOrderModal">
   <div class="modal-card edit-card">
@@ -1964,7 +2012,7 @@ try{
   // are tracked by key too, so a list re-render in the middle of a request (which
   // creates brand-new buttons) can't open a second, duplicate submission.
   const BUSY_SEL = 'button, .btn, .card-btn, .modal-opt-btn, .exp-action-btn, .debt-settle-btn, .icon-btn, [role="button"]';
-  const BUSY_ATTRS = ['data-awb','data-mail-btn','data-mark-delivered','data-mark-paid','data-edit-order','data-cancel-order'];
+  const BUSY_ATTRS = ['data-return','data-exchange','data-awb','data-mail-btn','data-mark-delivered','data-mark-paid','data-edit-order','data-cancel-order'];
   const BUSY_ROW_ATTRS = ['data-delete-expense-row','data-edit-expense-row','data-delete-debt-row','data-settle-row'];
   const BUSY_ATTR_SEL = BUSY_ATTRS.concat(BUSY_ROW_ATTRS).map(a => '[' + a + ']').join(',');
   const busyTokens = new Map(); // key -> Set(token)
@@ -2607,7 +2655,7 @@ try{
     currentTargetBtn = btn;
     currentOrderSerial = serial;
     const isReplace = btn.classList.contains('replace-mode');
-    $('modalTitle').textContent = (isReplace ? 'Replace AWB #' : 'Create AWB #') + serial;
+    $('modalTitle').textContent = (btn.hasAttribute('data-return') ? 'Return #' : (isReplace ? 'Replace AWB #' : 'Create AWB #')) + serial;
     $('locationModal').classList.add('active');
   }
 
@@ -2641,7 +2689,7 @@ try{
     currentOrderSerial = serial;
     pendingPickupLocation = location;
     const isReplace = btn.classList.contains('replace-mode');
-    $('pickupDateModalTitle').textContent = (isReplace ? 'Replace AWB #' : 'Create AWB #') + serial;
+    $('pickupDateModalTitle').textContent = (btn.hasAttribute('data-return') ? 'Return #' : (isReplace ? 'Replace AWB #' : 'Create AWB #')) + serial;
     $('pickupDateInput').value = '';
     $('pickupDateError').classList.remove('show');
     // Don't allow picking a date before today
@@ -2687,6 +2735,22 @@ try{
     const from = nextValidDay(pickupDate);
     const to = nextValidDay(nextValidDay(from));
 
+    if(btn.hasAttribute('data-return')){
+      // Return: the whole delivered order goes back to the chosen location on the chosen day.
+      logOrderAction(serial, 'Return requested', `${location} — pickup ${val}`);
+      if(!allOrderItems.length){ try{ await fetchOrderItems(); }catch(e){} }
+      const order = allOrders.find(o => String(o['Order Serial']) === String(serial)) || {};
+      const rows = orderRowsFor(serial);
+      await sendMakeWebhook(btn, Object.assign({}, order, pickupFieldsFor(pickupDate, location), {
+        'event': 'return',
+        'order serial': serial,
+        'order ID': order['order ID'] || serial,
+        items_array: rows,
+        return_pieces: rows.reduce((s, r) => s + r.quantity, 0),
+        return_weight: Math.round(rows.reduce((s, r) => s + r.weight * r.quantity, 0) * 1000) / 1000
+      }), 'Return sent');
+      return;
+    }
     const isReplace = btn.classList.contains('replace-mode');
     logOrderAction(serial, isReplace ? 'Replace AWB requested' : 'Create AWB requested', `${location} — pickup ${val}`);
 
@@ -2700,6 +2764,183 @@ try{
       "from": toCustomerDate(from),
       "to": toCustomerDate(to)
     }, `AWB Created (${location})`);
+  });
+
+  // ============ RETURN / EXCHANGE (delivered orders only) ============
+  // Both go to the same Make URL as "Create AWB" (MAKE_WEBHOOK_URL), with event "return" / "exchange" and all of the order's data.
+  // Exchange also rewrites the order's rows in the Items sheet exactly like "update order" (stock follows by SKU).
+  function pickupFieldsFor(pickupDate, location){
+    const from = nextValidDay(pickupDate), to = nextValidDay(nextValidDay(from));
+    return {
+      'pickup location': location,
+      'pickup date': toPickupDateLabel(pickupDate),
+      'ReadyTimestamp': toAramexDate(atTime(pickupDate, 11, 0)),
+      'LastPickupTimestamp': toAramexDate(atTime(pickupDate, 12, 0)),
+      'ClosingTimestamp': toAramexDate(atTime(pickupDate, 13, 0)),
+      'from': toCustomerDate(from),
+      'to': toCustomerDate(to)
+    };
+  }
+  const exMoney = n => (Math.round(n * 100) / 100).toLocaleString('en-US', {maximumFractionDigits: 2});
+  const exRows = list => list.map(it => ({ item: it.name, sku: it.manual ? '' : (it.sku || ''), quantity: it.qty, salePrice: it.salePrice || 0, weight: it.weight || 0 }));
+  const exText = rows => rows.map(r => r.item + ' x' + r.quantity).join(', ');
+  const orderRowsFor = serial => allOrderItems.filter(r => String(r.orderSerial) === String(serial))
+    .map(r => ({ item: r.item, sku: r.sku || '', quantity: Number(r.quantity) || 0, salePrice: Number(r.salePrice) || 0, weight: Number(r.weight) || 0 }));
+
+  let exOrder = null, exBtn = null, exOld = [], exNew = [], exPick = null;
+  function exCalc(){
+    const r2 = n => Math.round(n * 100) / 100;
+    const ret = exOld.filter(it => it.ret > 0);
+    const returnedValue = r2(ret.reduce((s, it) => s + it.salePrice * it.ret, 0));
+    const newValue = r2(exNew.reduce((s, it) => s + it.salePrice * it.qty, 0));
+    const diff = r2(newValue - returnedValue);
+    const ship = Math.max(0, parseFloat($('exShip').value) || 0);
+    const by = $('exShipBy').value === 'store' ? 'store' : 'customer';
+    const shipOnCustomer = by === 'customer' ? ship : 0, shipOnStore = by === 'store' ? ship : 0;
+    const net = r2(diff + shipOnCustomer);
+    return { ret, returnedValue, newValue, diff, ship, by, shipOnCustomer, shipOnStore, net, collect: Math.max(0, net), refund: Math.max(0, -net),
+      retPieces: ret.reduce((s, it) => s + it.ret, 0), retWeight: r2(ret.reduce((s, it) => s + (it.weight || 0) * it.ret, 0)),
+      newPieces: exNew.reduce((s, it) => s + it.qty, 0), newWeight: r2(exNew.reduce((s, it) => s + (it.weight || 0) * it.qty, 0)) };
+  }
+  function exSummary(){
+    const c = exCalc(), sgn = n => (n > 0 ? '+' : '') + exMoney(n);
+    $('exSummary').innerHTML =
+      `<div><span>Returned items value</span><b>${exMoney(c.returnedValue)} EGP</b></div>` +
+      `<div><span>New items value</span><b>${exMoney(c.newValue)} EGP</b></div>` +
+      `<div><span>Price difference</span><b>${sgn(c.diff)} EGP</b></div>` +
+      `<div><span>Shipping ${exMoney(c.ship)} EGP — paid by</span><b>${c.by === 'customer' ? 'Customer (added)' : 'Us (not charged)'}</b></div>` +
+      (c.refund > 0
+        ? `<div class="ex-total refund"><span>Refund to customer</span><b>${exMoney(c.refund)} EGP</b></div>`
+        : `<div class="ex-total"><span>Collect from customer</span><b>${exMoney(c.collect)} EGP</b></div>`);
+  }
+  function exRender(){
+    const old = $('exOldList');
+    old.innerHTML = exOld.length ? exOld.map((it, i) => `<div class="items-editor-row">
+        ${it.manual ? '' : pThumb(it.sku, it.name)}<span class="ie-name">${escapeHtml(it.name)}<span class="ie-sub">${exMoney(it.salePrice)} EGP each · ordered ${it.qty}</span></span>
+        <input type="number" class="ie-qty ex-ret" min="0" max="${it.qty}" value="${it.ret}" data-idx="${i}" title="Quantity returned"></div>`).join('')
+      : '<div class="items-editor-empty">This order has no item rows to exchange.</div>';
+    old.querySelectorAll('.ex-ret').forEach(inp => inp.addEventListener('input', () => {
+      const it = exOld[+inp.dataset.idx];
+      it.ret = Math.min(it.qty, Math.max(0, parseInt(inp.value, 10) || 0));
+      exSummary();
+    }));
+    const nw = $('exNewList');
+    nw.innerHTML = exNew.length ? exNew.map((it, i) => {
+      const p = findProductBySku(it.sku), low = p && p.balance !== undefined && p.balance !== null && it.qty > Number(p.balance);
+      return `<div class="items-editor-row">
+        ${pThumb(it.sku, it.name)}<span class="ie-name">${escapeHtml(it.name)}<span class="ie-sub${low ? ' no-low' : ''}">${+Number(it.weight).toFixed(3)} kg each${p && p.balance !== undefined && p.balance !== null ? ' · stock ' + p.balance : ''}</span></span>
+        <span class="ie-price-wrap"><input type="number" class="ie-price" min="0" step="any" inputmode="decimal" value="${+Number(it.salePrice).toFixed(2)}" data-idx="${i}"><small>EGP each</small></span>
+        <input type="number" class="ie-qty ex-newqty" min="1" value="${it.qty}" data-idx="${i}">
+        <button type="button" class="ie-remove" data-idx="${i}" title="Remove">×</button></div>`;
+    }).join('') : '<div class="items-editor-empty">No items added yet.</div>';
+    nw.querySelectorAll('.ex-newqty').forEach(inp => inp.addEventListener('input', () => { exNew[+inp.dataset.idx].qty = Math.max(1, parseInt(inp.value, 10) || 1); exSummary(); }));
+    nw.querySelectorAll('.ie-price').forEach(inp => inp.addEventListener('input', () => { exNew[+inp.dataset.idx].salePrice = Math.max(0, parseFloat(inp.value) || 0); exSummary(); }));
+    nw.querySelectorAll('.ie-remove').forEach(b => b.addEventListener('click', () => { exNew.splice(+b.dataset.idx, 1); exRender(); }));
+    exSummary();
+  }
+  async function openExchangeModal(btn, serial){
+    const order = allOrders.find(o => String(o['Order Serial']) === String(serial));
+    if(!order){ alert('Could not find that order.'); return; }
+    exOrder = order; exBtn = btn; exNew = []; exPick = null;
+    // Same loader the edit modal uses: the order's item rows with the price paid at the time of the order.
+    await initItemsEditor(order);
+    exOld = editItemsList.filter(it => !it.textOnly).map(it => Object.assign({}, it, { ret: 0 }));
+    const shipKey = resolveShippingAmountKey(order), shipVal = shipKey ? parseFloat(order[shipKey]) : NaN;
+    $('exShip').value = !isNaN(shipVal) ? String(shipVal) : '';
+    $('exShipBy').value = 'customer';
+    $('exSearch').value = ''; $('exQty').value = '1'; $('exSearchResults').classList.remove('show');
+    $('exLoc').selectedIndex = 0; $('exDate').value = ''; $('exDate').min = ymd(new Date());
+    $('exDateError').classList.remove('show'); $('exError').classList.remove('show');
+    $('exModalTitle').textContent = 'Exchange: ' + (order['order ID'] || serial);
+    exRender();
+    $('exchangeModal').classList.add('active');
+  }
+  function hideExchangeModal(){ $('exchangeModal').classList.remove('active'); }
+  $('exCancelBtn').addEventListener('click', hideExchangeModal);
+  ['exShip', 'exShipBy'].forEach(id => { $(id).addEventListener('input', exSummary); $(id).addEventListener('change', exSummary); });
+  $('exDate').addEventListener('input', () => { const v = $('exDate').value; $('exDateError').classList.toggle('show', !!v && isFriday(parseDateOnly(v))); });
+  // product search for "customer receives"
+  function exSearchRender(query){
+    const box = $('exSearchResults'), q = query.trim().toLowerCase();
+    if(!q){ box.classList.remove('show'); return; }
+    const matches = allProducts.map((p, i) => ({ p, i })).filter(({p}) => productMatchesQuery(p, q))
+      .sort((a, b) => (productSearchRank(a.p, q) - productSearchRank(b.p, q)) || a.p.name.toLowerCase().localeCompare(b.p.name.toLowerCase()));
+    box.innerHTML = matches.length ? matches.map(({p, i}) => `<div class="items-editor-search-result p-has-th" data-idx="${i}">${pThumb(p.sku, p.name)}<div class="p-txt">${escapeHtml(p.name)}<div class="ie-sr-price">${p.salePrice} EGP · ${p.weight} kg</div></div></div>`).join('')
+      : '<div class="items-editor-search-empty">No matching products</div>';
+    box.querySelectorAll('.items-editor-search-result[data-idx]').forEach(el => el.addEventListener('click', () => {
+      exPick = parseInt(el.dataset.idx, 10); $('exSearch').value = allProducts[exPick].name; box.classList.remove('show');
+    }));
+    box.classList.add('show');
+  }
+  $('exSearch').addEventListener('input', () => { exPick = null; exSearchRender($('exSearch').value); });
+  $('exSearch').addEventListener('focus', () => { if($('exSearch').value.trim()) exSearchRender($('exSearch').value); });
+  document.addEventListener('click', e => { if(!e.target.closest('.ex-search-wrap')) $('exSearchResults').classList.remove('show'); });
+  $('exAddBtn').addEventListener('click', () => {
+    let p = exPick !== null ? allProducts[exPick] : (findProductByName($('exSearch').value) || allProducts.find(x => productMatchesExact(x, $('exSearch').value)));
+    if(!p){ $('exSearch').focus(); return; }
+    const qty = Math.max(1, parseInt($('exQty').value, 10) || 1);
+    const same = exNew.find(it => it.sku === p.sku);
+    if(same) same.qty += qty; else exNew.push({ name: p.name, qty, salePrice: p.salePrice, weight: p.weight, sku: p.sku, option: '', date: '' });
+    $('exSearch').value = ''; $('exQty').value = '1'; exPick = null; $('exSearchResults').classList.remove('show');
+    exRender();
+  });
+  // Same call "update order" uses to rewrite the order's rows in the Items sheet; here a failure stops everything (nothing is sent).
+  async function exSyncItems(body){
+    try{
+      const res = await fetch(API_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify(body) });
+      const data = await res.json();
+      if(data && data.error){ alert('Could not update the order items:\n' + data.error + '\n\nNothing was sent.'); return false; }
+      await fetchOrderItems();
+      return true;
+    }catch(err){
+      alert('Could not reach the sheet to update the order items (network/API error).\n\nNothing was sent.');
+      return false;
+    }
+  }
+  $('exConfirmBtn').addEventListener('click', async () => {
+    const order = exOrder, btn = exBtn;
+    if(!order || !btn) return;
+    const c = exCalc(), serial = String(order['Order Serial']), errEl = $('exError');
+    const fail = msg => { errEl.textContent = msg; errEl.classList.add('show'); };
+    errEl.classList.remove('show');
+    if(!c.ret.length) return fail('Choose at least one returned item (quantity above 0).');
+    if(!exNew.length) return fail('Add at least one item the customer receives.');
+    const val = $('exDate').value;
+    if(!val){ $('exDate').focus(); return fail('Choose the pickup date.'); }
+    const pickupDate = parseDateOnly(val);
+    if(isFriday(pickupDate)){ $('exDateError').classList.add('show'); return; }
+    const loc = $('exLoc').value;
+    // Final items of the order = what stays + what is received (same SKU and price are merged).
+    const finalList = exOld.filter(it => it.qty - it.ret > 0).map(it => Object.assign({}, it, { qty: it.qty - it.ret }));
+    exNew.forEach(n => {
+      const same = finalList.find(it => !it.manual && n.sku && it.sku === n.sku && Math.abs((it.salePrice || 0) - n.salePrice) < 0.005);
+      if(same) same.qty += n.qty; else finalList.push(Object.assign({}, n));
+    });
+    const sheetRows = finalList.filter(it => !it.textOnly).map(it => ({
+      item: it.name, option: it.manual ? CUSTOM_ITEM_MARK : (it.option || ''), quantity: it.qty,
+      sku: it.manual ? '' : (it.sku || ''), date: it.date || '', salePrice: it.salePrice || 0, weight: it.weight || 0 }));
+    $('exConfirmBtn').disabled = true;
+    try{
+      logOrderAction(serial, 'Exchange requested', `${loc} — pickup ${val} — collect ${exMoney(c.collect)} / refund ${exMoney(c.refund)}`);
+      const ok = await exSyncItems({ action: 'updateOrderItems', orderSerial: serial, customerName: order['Customer Name'] || '', phone: order['Phone'] || '', items: sheetRows });
+      if(!ok) return;
+      hideExchangeModal();
+      const retRows = c.ret.map(it => ({ item: it.name, sku: it.manual ? '' : (it.sku || ''), quantity: it.ret, salePrice: it.salePrice || 0, weight: it.weight || 0 }));
+      const newRows = exRows(exNew), finalRows = exRows(finalList);
+      const payload = Object.assign({}, order, pickupFieldsFor(pickupDate, loc), {
+        'event': 'exchange',
+        'order serial': serial,
+        'order ID': order['order ID'] || serial,
+        returned_items: retRows, returned_items_text: exText(retRows),
+        new_items: newRows, new_items_text: exText(newRows),
+        final_items: finalRows, final_items_text: exText(finalRows),
+        returned_value: c.returnedValue, new_items_value: c.newValue, price_difference: c.diff,
+        shipping_cost: c.ship, shipping_paid_by: c.by, shipping_on_customer: c.shipOnCustomer, shipping_on_store: c.shipOnStore,
+        amount_to_collect: c.collect, refund_to_customer: c.refund,
+        return_pieces: c.retPieces, return_weight: c.retWeight, new_pieces: c.newPieces, new_weight: c.newWeight
+      });
+      await sendMakeWebhook(btn, payload, 'Exchange sent');
+    } finally { $('exConfirmBtn').disabled = false; }
   });
 
   // ---- "Who received this order?" flow, used by both "Delivered locally"
@@ -4923,6 +5164,10 @@ try{
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
           Send mail
         </button>`;
+    } else if (isDelivered) {
+      actionBtnHtml = `
+        <button class="card-btn return-btn" data-return data-serial="${escapeAttr(serial)}">↩️ Return</button>
+        <button class="card-btn exchange-btn" data-exchange data-serial="${escapeAttr(serial)}">🔄 Exchange</button>`;
     }
 
     return `
@@ -5456,6 +5701,16 @@ ${invoiceFootHtml('')}`;
         const serial = btn.getAttribute('data-serial');
         promptLocationSelection(btn, serial);
       });
+    });
+
+    // Return / Exchange buttons (delivered orders)
+    document.querySelectorAll('[data-return]').forEach(btn=>{
+      if(btn._boundReturn) return; btn._boundReturn = true;
+      btn.addEventListener('click', ()=>{ const serial = btn.getAttribute('data-serial'); if(serial) promptLocationSelection(btn, serial); });
+    });
+    document.querySelectorAll('[data-exchange]').forEach(btn=>{
+      if(btn._boundExchange) return; btn._boundExchange = true;
+      btn.addEventListener('click', ()=>{ const serial = btn.getAttribute('data-serial'); if(serial) openExchangeModal(btn, serial); });
     });
 
     // Send Mail button listener
