@@ -5018,7 +5018,7 @@ try{
           ${detailRow('Open package', o['open package'] !== undefined && o['open package'] !== null && o['open package'] !== '' ? o['open package'] : o['open_package'])}
           ${detailRow('Language', o.Lang)}
           ${detailRow('Date', fmtDate(o.date))}
-          ${detailRow('Last updated', fmtDate(o.Updated))}
+          ${detailRow('Last updated', fmtDate(o.Updated) + (fmtTime(o.Updated) ? ' · ' + fmtTime(o.Updated) : ''))}
         </div>
         ${o.note ? `<div class="note-line" style="margin-top:10px;">📝 ${escapeHtml(o.note)}</div>` : ''}
         <div class="invoice-row">
