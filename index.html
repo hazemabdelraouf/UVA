@@ -436,6 +436,8 @@
     color:#ffffff;
   }
   .card-btn:active{transform:scale(0.98);}
+  .card-btn.checking{opacity:0.7;pointer-events:none;}
+  .cancel-pickup-btn{background:linear-gradient(180deg, #fbbf24, #d97706);color:#ffffff;}
   .return-btn{background:linear-gradient(180deg, #f87171, #dc2626);color:#ffffff;}
   .exchange-btn{background:linear-gradient(180deg, #a78bfa, #7c3aed);color:#ffffff;}
   .ex-sum{display:flex;flex-direction:column;gap:5px;margin:12px 0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;font-size:13.5px;background:var(--panel-2);}
@@ -2012,7 +2014,7 @@ try{
   // are tracked by key too, so a list re-render in the middle of a request (which
   // creates brand-new buttons) can't open a second, duplicate submission.
   const BUSY_SEL = 'button, .btn, .card-btn, .modal-opt-btn, .exp-action-btn, .debt-settle-btn, .icon-btn, [role="button"]';
-  const BUSY_ATTRS = ['data-return','data-exchange','data-awb','data-mail-btn','data-mark-delivered','data-mark-paid','data-edit-order','data-cancel-order'];
+  const BUSY_ATTRS = ['data-cancel-pickup','data-return','data-exchange','data-awb','data-mail-btn','data-mark-delivered','data-mark-paid','data-edit-order','data-cancel-order'];
   const BUSY_ROW_ATTRS = ['data-delete-expense-row','data-edit-expense-row','data-delete-debt-row','data-settle-row'];
   const BUSY_ATTR_SEL = BUSY_ATTRS.concat(BUSY_ROW_ATTRS).map(a => '[' + a + ']').join(',');
   const busyTokens = new Map(); // key -> Set(token)
@@ -2651,6 +2653,34 @@ try{
     });
   });
 
+  // ---- Stale-page protection: ask the server for the order's CURRENT status right before a pickup action,
+  // so a page that was not refreshed can not create a second pickup (or cancel one that is already gone). ----
+  async function latestShipStatus(serial){
+    try{
+      const sep = API_URL.includes('?') ? '&' : '?';
+      const res = await fetch(API_URL + sep + (bootstrapSupported ? 'action=bootstrap&parts=orders' : 'action=list'), { method: 'GET', redirect: 'follow', cache: 'no-store' });
+      const data = await res.json();
+      if(!data || !Array.isArray(data.orders)) return null;
+      const o = data.orders.find(x => String(x['Order Serial']) === String(serial));
+      return o ? normStatus(o.shipping_status) : null;
+    }catch(e){ return null; }
+  }
+  async function guardStatus(btn, serial, expected){
+    btn.classList.add('checking');
+    let st;
+    try{ st = await latestShipStatus(serial); } finally { btn.classList.remove('checking'); }
+    if(st === null) return confirm('Could not check this order\'s latest status (network problem).\n\nContinue anyway?');
+    if(st === expected) return true;
+    const label = SHIP_LABELS[st] || st || 'unknown';
+    alert(expected === 'request needed'
+      ? (st === 'pending pickup'
+          ? 'This order is already in "Pending pickup": a pickup was created (maybe from another device) and this page was out of date.\n\nNothing was sent. The list is being refreshed.'
+          : 'This order is now "' + label + '", so a pickup can not be created.\n\nNothing was sent. The list is being refreshed.')
+      : 'This order is now "' + label + '" (not "Pending pickup"), so there is no pickup to cancel.\n\nNothing was sent. The list is being refreshed.');
+    fetchOrders();
+    return false;
+  }
+
   function promptLocationSelection(btn, serial){
     currentTargetBtn = btn;
     currentOrderSerial = serial;
@@ -2752,6 +2782,7 @@ try{
       return;
     }
     const isReplace = btn.classList.contains('replace-mode');
+    if(!isReplace && !(await guardStatus(btn, serial, 'request needed'))) return;
     logOrderAction(serial, isReplace ? 'Replace AWB requested' : 'Create AWB requested', `${location} — pickup ${val}`);
 
     await sendMakeWebhook(btn, {
@@ -5154,9 +5185,9 @@ try{
         </button>`;
     } else if (isPendingPickup) {
       actionBtnHtml = `
-        <button class="card-btn create-awb-btn replace-mode" data-awb data-serial="${escapeAttr(serial)}">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          Replace AWB
+        <button class="card-btn cancel-pickup-btn" data-cancel-pickup data-serial="${escapeAttr(serial)}">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          Cancel pickup
         </button>`;
     } else if (!isDelivered) {
       actionBtnHtml = `
@@ -5697,9 +5728,30 @@ ${invoiceFootHtml('')}`;
     // AWB button listener
     document.querySelectorAll('[data-awb]').forEach(btn=>{
       if(btn._boundAwb) return; btn._boundAwb = true;
-      btn.addEventListener('click', ()=>{
+      btn.addEventListener('click', async ()=>{
         const serial = btn.getAttribute('data-serial');
+        if(!btn.classList.contains('replace-mode') && !(await guardStatus(btn, serial, 'request needed'))) return;
         promptLocationSelection(btn, serial);
+      });
+    });
+
+    // Cancel pickup: the order goes back to "request needed" (Make does the update + cancels the carrier pickup)
+    document.querySelectorAll('[data-cancel-pickup]').forEach(btn=>{
+      if(btn._boundCancelPickup) return; btn._boundCancelPickup = true;
+      btn.addEventListener('click', async ()=>{
+        const serial = btn.getAttribute('data-serial');
+        if(!serial) return;
+        if(!(await guardStatus(btn, serial, 'pending pickup'))) return;
+        if(!confirm('Cancel the pickup for order ' + serial + ' and set it back to "Request needed"?')) return;
+        const order = allOrders.find(o => String(o['Order Serial']) === String(serial)) || {};
+        logOrderAction(serial, 'Cancel pickup requested');
+        await sendMakeWebhook(btn, Object.assign({}, order, {
+          'event': 'cancel pickup',
+          'order serial': serial,
+          'order ID': order['order ID'] || serial,
+          'previous_status': 'pending pickup',
+          'shipping_status': 'request needed'
+        }), 'Pickup cancelled');
       });
     });
 
